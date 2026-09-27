@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Крылья России</title>
+<meta name="description" content="Интерактивный цифровой музей истории российской авиации.">
+<style>
+html,body{margin:0;min-height:100%;background:#0c0d0d;color:#f2eee5;font-family:system-ui,sans-serif}
+#kr-loader{min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 50% 35%,#1c2220 0,#0c0d0d 55%);padding:24px;box-sizing:border-box}
+#kr-loader div{text-align:center;max-width:620px}
+#kr-loader b{display:block;font:500 44px/1.1 Georgia,serif;letter-spacing:.04em}
+#kr-loader span{display:block;margin-top:14px;color:#9a9b94;font:12px/1.5 ui-monospace,monospace;letter-spacing:.08em}
+#kr-loader progress{margin-top:24px;width:min(420px,80vw)}
+#kr-error{display:none;margin-top:18px;color:#e1a26e;font:12px/1.6 ui-monospace,monospace;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<div id="kr-loader"><div><b>КРЫЛЬЯ РОССИИ</b><span>ЗАГРУЗКА РЕЛИЗА V22</span><progress id="kr-progress" max="8" value="0"></progress><div id="kr-error"></div></div></div>
+<script>
+(async()=>{
+  const total=8;
+  const chunks=[];
+  const progress=document.getElementById('kr-progress');
+  const error=document.getElementById('kr-error');
+  try{
+    for(let i=1;i<=total;i++){
+      const r=await fetch('site/kr-'+String(i).padStart(2,'0')+'.b64',{cache:'no-store'});
+      if(!r.ok) throw new Error('Не удалось загрузить site/kr-'+String(i).padStart(2,'0')+'.b64 ('+r.status+')');
+      chunks.push((await r.text()).trim());
+      progress.value=i;
+    }
+    const b64=chunks.join('');
+    const bin=atob(b64);
+    const bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+    if(!('DecompressionStream' in window)) throw new Error('Браузер не поддерживает DecompressionStream. Нужен современный Chrome/Edge/Android Chrome.');
+    const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+    const html=await new Response(stream).text();
+    document.open();
+    document.write(html);
+    document.close();
+  }catch(e){
+    error.style.display='block';
+    error.textContent='Не удалось открыть сайт из архива.\n'+(e&&e.message?e.message:e);
+  }
+})();
+</script>
+</body>
+</html>
