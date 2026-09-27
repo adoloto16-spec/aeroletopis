@@ -66,43 +66,33 @@ jobs:
 
               idx = order.index(target)
               prefix_names = order[:idx]
-              candidates = []
               s = chunks[target]
+              current_old = s
 
               for pos in range(len(s) + 1):
                   for ch in alphabet:
                       cand = s[:pos] + ch + s[pos:]
-                      old = chunks[target]
                       chunks[target] = cand
-                      try:
-                          valid_gzip_prefix(prefix_names + [target])
-                          candidates.append(cand)
-                          if len(candidates) >= 32:
-                              break
-                      except Exception:
-                          pass
-                      finally:
-                          chunks[target] = old
-                  if len(candidates) >= 32:
-                      break
 
-              if not candidates:
-                  raise SystemExit(f"Could not repair {target}")
+                      if target == "kr-08q3":
+                          raw = "".join(chunks[n] for n in order)
+                          raw += "=" * ((4 - len(raw) % 4) % 4)
+                          try:
+                              gzip.decompress(base64.b64decode(raw, validate=False))
+                              print(f"Repaired {target}: inserted one base64 character at {pos}")
+                              return
+                          except Exception:
+                              pass
+                      else:
+                          try:
+                              valid_gzip_prefix(prefix_names + [target])
+                              print(f"Repaired {target}: inserted one base64 character at {pos}")
+                              return
+                          except Exception:
+                              pass
 
-              # Prefer a candidate that allows the complete gzip stream to decode
-              # once all later source chunks are present.
-              old = chunks[target]
-              for cand in candidates:
-                  chunks[target] = cand
-                  raw = "".join(chunks[n] for n in order)
-                  raw += "=" * ((4 - len(raw) % 4) % 4)
-                  try:
-                      gzip.decompress(base64.b64decode(raw, validate=False))
-                      return
-                  except Exception:
-                      pass
-              chunks[target] = old
-              raise SystemExit(f"Could not find a complete-gzip repair for {target}")
+              chunks[target] = current_old
+              raise SystemExit(f"Could not repair {target}")
 
           for target in ["kr-04q1","kr-08q1","kr-08q3"]:
               repair_one(target)
