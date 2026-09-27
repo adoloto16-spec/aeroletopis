@@ -1,4 +1,4 @@
-# Крылья России — интерактивный музей российской авиации
+# Аэролетопись — интерактивный музей российской авиации
 
 В репозитории опубликована веб-версия релизного архива **v22**.
 
@@ -10,7 +10,7 @@
 
 Адрес сайта:
 
-https://adoloto16-spec.github.io/krylya-rossii/
+https://adoloto16-spec.github.io/aeroletopis/
 
 Если GitHub Pages ещё не активирован для репозитория, в **Settings → Pages → Build and deployment → Source** нужно один раз выбрать **GitHub Actions**.
 
