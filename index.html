@@ -16,19 +16,19 @@ html,body{margin:0;min-height:100%;background:#0c0d0d;color:#f2eee5;font-family:
 </style>
 </head>
 <body>
-<div id="kr-loader"><div><b>КРЫЛЬЯ РОССИИ</b><span>ЗАГРУЗКА РЕЛИЗА V22</span><progress id="kr-progress" max="8" value="0"></progress><div id="kr-error"></div></div></div>
+<div id="kr-loader"><div><b>КРЫЛЬЯ РОССИИ</b><span>ЗАГРУЗКА РЕЛИЗА V22</span><progress id="kr-progress" max="11" value="0"></progress><div id="kr-error"></div></div></div>
 <script>
 (async()=>{
-  const total=8;
+  const files=["kr-01","kr-02","kr-03","kr-04","kr-05","kr-06a","kr-06b","kr-07a","kr-07b","kr-08a","kr-08b"];
   const chunks=[];
   const progress=document.getElementById('kr-progress');
   const error=document.getElementById('kr-error');
   try{
-    for(let i=1;i<=total;i++){
-      const r=await fetch('site/kr-'+String(i).padStart(2,'0')+'.b64',{cache:'no-store'});
-      if(!r.ok) throw new Error('Не удалось загрузить site/kr-'+String(i).padStart(2,'0')+'.b64 ('+r.status+')');
+    for(let i=0;i<files.length;i++){
+      const r=await fetch('site/'+files[i]+'.b64',{cache:'no-store'});
+      if(!r.ok) throw new Error('Не удалось загрузить site/'+files[i]+'.b64 ('+r.status+')');
       chunks.push((await r.text()).trim());
-      progress.value=i;
+      progress.value=i+1;
     }
     const b64=chunks.join('');
     const bin=atob(b64);
