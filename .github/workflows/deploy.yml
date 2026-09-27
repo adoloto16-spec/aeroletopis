@@ -57,8 +57,9 @@ jobs:
           except Exception as exc:
               raise SystemExit(f"Release payload is invalid: {exc}")
 
-          if len(html) != 144355:
-              raise SystemExit(f"Unexpected release HTML character length: {len(html)}")
+          html = html.replace("Крылья России", "Аэролетопись")
+          if len(html) != 144354:
+              raise SystemExit(f"Unexpected release HTML character length after branding: {len(html)}")
 
           out = Path("dist")
           out.mkdir(exist_ok=True)
