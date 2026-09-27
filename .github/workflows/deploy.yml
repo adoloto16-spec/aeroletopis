@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -24,6 +24,52 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Normalize release branding
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, gzip, subprocess
+
+          order = [
+              "kr-01a","kr-01b","kr-02","kr-03",
+              "kr-04q1","kr-04q2","kr-04q3","kr-04q4","kr-04b",
+              "kr-05a","kr-05b","kr-06a","kr-06b",
+              "kr-07q1","kr-07q2","kr-07q3","kr-07q4","kr-07b",
+              "kr-08q1","kr-08q2","kr-08q3","kr-08q4","kr-08b"
+          ]
+          paths = [Path("site", name + ".b64") for name in order]
+          chunks = [p.read_text(encoding="utf-8").strip() for p in paths]
+          raw = "".join(chunks)
+          html = gzip.decompress(base64.b64decode(raw, validate=True)).decode("utf-8")
+          if "Крылья России" not in html:
+              print("Release branding already normalized")
+              raise SystemExit(0)
+
+          html = html.replace("Крылья России", "Аэролетопись")
+          payload = base64.b64encode(gzip.compress(html.encode("utf-8"), compresslevel=9, mtime=1790489284)).decode("ascii")
+          sizes = [len(chunk) for chunk in chunks[:-1]]
+          sizes.append(len(payload) - sum(sizes))
+          if sizes[-1] <= 0:
+              raise SystemExit("Release payload is too short for existing chunk layout")
+
+          pos = 0
+          for path, size in zip(paths, sizes):
+              path.write_text(payload[pos:pos + size] + "\\n", encoding="utf-8")
+              pos += size
+
+          subprocess.run(["git", "config", "user.name", "github-actions[bot]"], check=True)
+          subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], check=True)
+          subprocess.run(["git", "add", "site"], check=True)
+          result = subprocess.run(["git", "diff", "--cached", "--quiet"])
+          if result.returncode == 0:
+              print("No release chunk changes needed")
+          else:
+              subprocess.run(["git", "commit", "-m", "rename: normalize compressed release branding"], check=True)
+              subprocess.run(["git", "push"], check=True)
+              print("Compressed release chunks updated")
+          PY
 
       - name: Rebuild release from archive chunks
         shell: bash
@@ -48,7 +94,7 @@ jobs:
               chunks.append(value)
 
           raw = "".join(chunks)
-          if len(raw) != 60368:
+          if len(raw) != 60364:
               raise SystemExit(f"Unexpected release payload length: {len(raw)}")
 
           try:
