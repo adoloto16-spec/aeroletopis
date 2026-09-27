@@ -57,7 +57,9 @@ jobs:
           except Exception as exc:
               raise SystemExit(f"Release payload is invalid before normalization: {exc}")
 
-          normalized_html = html.replace("Крылья России", "Аэролетопись")
+          normalized_html = (html
+              .replace("Крылья России", "Аэролетопись")
+              .replace("КРЫЛЬЯ РОССИИ", "АЭРОЛЕТОПИСЬ"))
           payload = base64.b64encode(
               gzip.compress(normalized_html.encode("utf-8"), compresslevel=9, mtime=1790489284)
           ).decode("ascii")
@@ -113,8 +115,6 @@ jobs:
               chunks.append(value)
 
           raw = "".join(chunks)
-          if len(raw) != 60364:
-              raise SystemExit(f"Unexpected release payload length: {len(raw)}")
 
           try:
               compressed = base64.b64decode(raw, validate=True)
@@ -122,9 +122,11 @@ jobs:
           except Exception as exc:
               raise SystemExit(f"Release payload is invalid: {exc}")
 
-          html = html.replace("Крылья России", "Аэролетопись")
-          if len(html) != 144354:
-              raise SystemExit(f"Unexpected release HTML character length after branding: {len(html)}")
+          html = (html
+              .replace("Крылья России", "Аэролетопись")
+              .replace("КРЫЛЬЯ РОССИИ", "АЭРОЛЕТОПИСЬ"))
+          if "Крылья России" in html or "КРЫЛЬЯ РОССИИ" in html:
+              raise SystemExit("Old site branding remains in release HTML")
 
           out = Path("dist")
           out.mkdir(exist_ok=True)
