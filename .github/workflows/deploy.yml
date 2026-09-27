@@ -32,9 +32,6 @@ jobs:
           from pathlib import Path
           import base64
           import gzip
-          import itertools
-          import string
-          import zlib
 
           order = [
               "kr-01a","kr-01b","kr-02","kr-03",
@@ -44,72 +41,30 @@ jobs:
               "kr-07q1","kr-07q2","kr-07q3","kr-07q4","kr-07b",
               "kr-08q1","kr-08q2","kr-08q3","kr-08q4","kr-08b"
           ]
-          expected_len = {"kr-04q1": 943, "kr-08q1": 943, "kr-08q3": 943}
-          alphabet = string.ascii_letters + string.digits + "+/"
 
-          chunks = {name: Path("site", name + ".b64").read_text(encoding="utf-8").strip() for name in order}
+          chunks = []
+          for name in order:
+              value = Path("site", name + ".b64").read_text(encoding="utf-8").strip()
+              chunks.append(value)
 
-          def valid_gzip_prefix(names, extra_tail=16):
-              raw = "".join(chunks[n] for n in names)
-              idx = order.index(names[-1])
-              if idx + 1 < len(order):
-                  raw += chunks[order[idx + 1]][:extra_tail]
-              raw += "=" * ((4 - len(raw) % 4) % 4)
-              data = base64.b64decode(raw, validate=False)
-              obj = zlib.decompressobj(16 + zlib.MAX_WBITS)
-              obj.decompress(data)
-              return True
+          raw = "".join(chunks)
+          if len(raw) != 60368:
+              raise SystemExit(f"Unexpected release payload length: {len(raw)}")
 
-          def repair_one(target):
-              if len(chunks[target]) == expected_len[target]:
-                  return
+          try:
+              compressed = base64.b64decode(raw, validate=True)
+              html = gzip.decompress(compressed).decode("utf-8")
+          except Exception as exc:
+              raise SystemExit(f"Release payload is invalid: {exc}")
 
-              idx = order.index(target)
-              prefix_names = order[:idx]
-              s = chunks[target]
-              current_old = s
-
-              for pos in range(len(s) + 1):
-                  for ch in alphabet:
-                      cand = s[:pos] + ch + s[pos:]
-                      chunks[target] = cand
-
-                      if target == "kr-08q3":
-                          raw = "".join(chunks[n] for n in order)
-                          raw += "=" * ((4 - len(raw) % 4) % 4)
-                          try:
-                              gzip.decompress(base64.b64decode(raw, validate=False))
-                              print(f"Repaired {target}: inserted one base64 character at {pos}")
-                              return
-                          except Exception:
-                              pass
-                      else:
-                          try:
-                              valid_gzip_prefix(prefix_names + [target])
-                              print(f"Repaired {target}: inserted one base64 character at {pos}")
-                              return
-                          except Exception:
-                              pass
-
-              chunks[target] = current_old
-              raise SystemExit(f"Could not repair {target}")
-
-          for target in ["kr-04q1","kr-08q1","kr-08q3"]:
-              repair_one(target)
-
-          raw = "".join(chunks[n] for n in order)
-          raw += "=" * ((4 - len(raw) % 4) % 4)
-          html = gzip.decompress(base64.b64decode(raw, validate=False)).decode("utf-8")
+          if len(html) != 172990:
+              raise SystemExit(f"Unexpected release HTML length: {len(html)}")
 
           out = Path("dist")
           out.mkdir(exist_ok=True)
           (out / "index.html").write_text(html, encoding="utf-8")
-          for name in ["README.md","IMAGE_LICENSES.md"]:
-              p = Path(name)
-              if p.exists():
-                  (out / name).write_text(p.read_text(encoding="utf-8"), encoding="utf-8")
           (out / ".nojekyll").write_text("", encoding="utf-8")
-          print(f"Release rebuilt: {len(html):,} HTML characters")
+          print(f"Release rebuilt successfully: {len(html):,} HTML characters")
           PY
 
       - name: Setup Pages
