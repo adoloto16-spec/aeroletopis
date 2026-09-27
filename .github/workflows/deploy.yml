@@ -41,40 +41,53 @@ jobs:
               "kr-08q1","kr-08q2","kr-08q3","kr-08q4","kr-08b"
           ]
           paths = [Path("site", name + ".b64") for name in order]
+          original_chunks = [p.read_text(encoding="utf-8") for p in paths]
           chunks = []
-          for path in paths:
-              value = path.read_text(encoding="utf-8")
+          malformed_suffix = False
+          for value in original_chunks:
               if value.endswith("\\n"):
                   value = value[:-2]
-              chunks.append(value.strip())
-          raw = "".join(chunks)
-          html = gzip.decompress(base64.b64decode(raw, validate=True)).decode("utf-8")
-          if "Крылья России" not in html:
-              print("Release branding already normalized")
-              raise SystemExit(0)
+                  malformed_suffix = True
+              value = value.strip()
+              chunks.append(value)
 
-          html = html.replace("Крылья России", "Аэролетопись")
-          payload = base64.b64encode(gzip.compress(html.encode("utf-8"), compresslevel=9, mtime=1790489284)).decode("ascii")
+          raw = "".join(chunks)
+          try:
+              html = gzip.decompress(base64.b64decode(raw, validate=True)).decode("utf-8")
+          except Exception as exc:
+              raise SystemExit(f"Release payload is invalid before normalization: {exc}")
+
+          normalized_html = html.replace("Крылья России", "Аэролетопись")
+          payload = base64.b64encode(
+              gzip.compress(normalized_html.encode("utf-8"), compresslevel=9, mtime=1790489284)
+          ).decode("ascii")
+
           sizes = [len(chunk) for chunk in chunks[:-1]]
           sizes.append(len(payload) - sum(sizes))
           if sizes[-1] <= 0:
               raise SystemExit("Release payload is too short for existing chunk layout")
 
           pos = 0
-          for path, size in zip(paths, sizes):
-              path.write_text(payload[pos:pos + size] + chr(10), encoding="utf-8")
+          desired = []
+          for size in sizes:
+              desired.append(payload[pos:pos + size])
               pos += size
 
-          subprocess.run(["git", "config", "user.name", "github-actions[bot]"], check=True)
-          subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], check=True)
-          subprocess.run(["git", "add", "site"], check=True)
-          result = subprocess.run(["git", "diff", "--cached", "--quiet"])
-          if result.returncode == 0:
-              print("No release chunk changes needed")
-          else:
+          needs_commit = malformed_suffix or normalized_html != html or any(
+              clean != original for clean, original in zip(desired, original_chunks)
+          )
+
+          if needs_commit:
+              for path, chunk in zip(paths, desired):
+                  path.write_text(chunk + chr(10), encoding="utf-8")
+              subprocess.run(["git", "config", "user.name", "github-actions[bot]"], check=True)
+              subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], check=True)
+              subprocess.run(["git", "add", "site"], check=True)
               subprocess.run(["git", "commit", "-m", "rename: normalize compressed release branding"], check=True)
               subprocess.run(["git", "push"], check=True)
-              print("Compressed release chunks updated")
+              print("Compressed release chunks normalized")
+          else:
+              print("Release branding and chunk encoding already normalized")
           PY
 
       - name: Rebuild release from archive chunks
