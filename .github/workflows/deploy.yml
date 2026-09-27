@@ -59,7 +59,9 @@ jobs:
 
           normalized_html = (html
               .replace("Крылья России", "Аэролетопись")
-              .replace("КРЫЛЬЯ РОССИИ", "АЭРОЛЕТОПИСЬ"))
+              .replace("КРЫЛЬЯ РОССИИ", "АЭРОЛЕТОПИСЬ")
+              .replace("<h1>КРЫЛЬЯ<br/><em>РОССИИ</em></h1>", "<h1>АЭРОЛЕТОПИСЬ</h1>")
+              .replace('<span class="brand-mark">KR</span>', '<span class="brand-mark">А</span>'))
           payload = base64.b64encode(
               gzip.compress(normalized_html.encode("utf-8"), compresslevel=9, mtime=1790489284)
           ).decode("ascii")
@@ -124,7 +126,9 @@ jobs:
 
           html = (html
               .replace("Крылья России", "Аэролетопись")
-              .replace("КРЫЛЬЯ РОССИИ", "АЭРОЛЕТОПИСЬ"))
+              .replace("КРЫЛЬЯ РОССИИ", "АЭРОЛЕТОПИСЬ")
+              .replace("<h1>КРЫЛЬЯ<br/><em>РОССИИ</em></h1>", "<h1>АЭРОЛЕТОПИСЬ</h1>")
+              .replace('<span class="brand-mark">KR</span>', '<span class="brand-mark">А</span>'))
           if "Крылья России" in html or "КРЫЛЬЯ РОССИИ" in html:
               raise SystemExit("Old site branding remains in release HTML")
 
