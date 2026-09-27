@@ -44,7 +44,7 @@ jobs:
               "kr-07q1","kr-07q2","kr-07q3","kr-07q4","kr-07b",
               "kr-08q1","kr-08q2","kr-08q3","kr-08q4","kr-08b"
           ]
-          suspect = {"kr-04q1", "kr-08q1", "kr-08q3"}
+          expected_len = {"kr-04q1": 943, "kr-08q1": 943, "kr-08q3": 943}
           alphabet = string.ascii_letters + string.digits + "+/"
 
           chunks = {name: Path("site", name + ".b64").read_text(encoding="utf-8").strip() for name in order}
@@ -61,11 +61,8 @@ jobs:
               return True
 
           def repair_one(target):
-              try:
-                  valid_gzip_prefix(order[:order.index(target)+1])
+              if len(chunks[target]) == expected_len[target]:
                   return
-              except zlib.error:
-                  pass
 
               idx = order.index(target)
               prefix_names = order[:idx]
