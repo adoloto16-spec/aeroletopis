@@ -1,4 +1,4 @@
-name: Inspect Air Battle source
+name: Inspect Air Battle restoration points
 on:
   push:
     branches:
@@ -10,24 +10,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Inspect compressed release source
+      - name: Inspect release registries
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import base64, gzip
+          import base64, gzip, re
           order = ["kr-01a","kr-01b","kr-02","kr-03","kr-04q1","kr-04q2","kr-04q3","kr-04q4","kr-04b","kr-05a","kr-05b","kr-06a","kr-06b","kr-07q1","kr-07q2","kr-07q3","kr-07q4","kr-07b","kr-08q1","kr-08q2","kr-08q3","kr-08q4","kr-08b"]
           payload = "".join(Path("site", n + ".b64").read_text().strip() for n in order)
           html = gzip.decompress(base64.b64decode(payload)).decode()
-          terms = ["BATTLE_SPRITES","BATTLE_STATS","BATTLE_ASSET_DATA","battleLoadPlaneImage","battleDrawPlaneGlyph","mig-29","su-57"]
-          for term in terms:
-              print("\\n===== " + term + " =====")
-              start = 0
-              count = 0
-              while count < 6:
-                  i = html.find(term, start)
-                  if i < 0: break
-                  print(html[max(0,i-700):min(len(html),i+1300)].replace("\\n"," ")[:2100])
-                  start = i + len(term)
-                  count += 1
+          print("html chars", len(html), "script tags", html.count("<script"))
+          for label, pattern in [
+              ("AIRCRAFT_IDS", r'const AIRCRAFT=\\[(.*?)\\];'),
+              ("BATTLE_SPRITES", r'const BATTLE_SPRITES=\\{(.*?)\\};'),
+              ("BATTLE_STATS", r'const BATTLE_STATS=\\{(.*?)\\};'),
+          ]:
+              matches = list(re.finditer(pattern, html, re.S))
+              print("\\n===",label,"count",len(matches),"===")
+              for m in matches:
+                  block=m.group(1)
+                  if label=="AIRCRAFT_IDS":
+                      print("ids:", re.findall(r'id:"([^"]+)"',block))
+                      for ident in ("mig-15","mig-21"):
+                          for hit in re.finditer(r'id:"'+re.escape(ident)+r'"',block):
+                              print(block[max(0,hit.start()-120):hit.start()+450])
+                  else:
+                      print(block[:3000])
+          print("\\n=== BATTLE_ASSET_KEYS ===")
+          for m in re.finditer(r'const BATTLE_ASSET_DATA=\\{(.*?)\\};',html,re.S):
+              print(re.findall(r'"([^"]+)":"data:image/png;base64,',m.group(1)))
+          for term in ["function battleLoadPlaneImage","function battleLoadThumbnail","function battleInit"]:
+              i=html.find(term)
+              print("\\n=== "+term+" ===")
+              print(html[i:i+1800] if i>=0 else "NOT FOUND")
           PY
