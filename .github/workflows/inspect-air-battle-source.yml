@@ -20,27 +20,27 @@ jobs:
           payload = "".join(Path("site", n + ".b64").read_text().strip() for n in order)
           html = gzip.decompress(base64.b64decode(payload)).decode()
           print("html chars", len(html), "script tags", html.count("<script"))
-          for label, pattern in [
-              ("AIRCRAFT_IDS", r'const AIRCRAFT=\\[(.*?)\\];'),
-              ("BATTLE_SPRITES", r'const BATTLE_SPRITES=\\{(.*?)\\};'),
-              ("BATTLE_STATS", r'const BATTLE_STATS=\\{(.*?)\\};'),
-          ]:
-              matches = list(re.finditer(pattern, html, re.S))
-              print("\\n===",label,"count",len(matches),"===")
-              for m in matches:
-                  block=m.group(1)
-                  if label=="AIRCRAFT_IDS":
-                      print("ids:", re.findall(r'id:"([^"]+)"',block))
-                      for ident in ("mig-15","mig-21"):
-                          for hit in re.finditer(r'id:"'+re.escape(ident)+r'"',block):
-                              print(block[max(0,hit.start()-120):hit.start()+450])
-                  else:
-                      print(block[:3000])
-          print("\\n=== BATTLE_ASSET_KEYS ===")
-          for m in re.finditer(r'const BATTLE_ASSET_DATA=\\{(.*?)\\};',html,re.S):
-              print(re.findall(r'"([^"]+)":"data:image/png;base64,',m.group(1)))
-          for term in ["function battleLoadPlaneImage","function battleLoadThumbnail","function battleInit"]:
-              i=html.find(term)
-              print("\\n=== "+term+" ===")
-              print(html[i:i+1800] if i>=0 else "NOT FOUND")
+          for marker in ["const AIRCRAFT=[","const BATTLE_SPRITES={","const BATTLE_STATS={","const BATTLE_ASSET_DATA={"]:
+              print("\\n=== "+marker+" count="+str(html.count(marker))+" ===")
+              start=0
+              for _ in range(4):
+                  i=html.find(marker,start)
+                  if i<0: break
+                  print(html[i:i+1800])
+                  start=i+len(marker)
+          aircraft_start=html.find("const AIRCRAFT=[")
+          aircraft_end=html.find("];",aircraft_start)
+          block=html[aircraft_start:aircraft_end+2] if aircraft_start>=0 and aircraft_end>=0 else ""
+          print("\\nAIRCRAFT IDS:", re.findall(r'id:"([^"]+)"',block))
+          for ident in ("mig-15","mig-21"):
+              i=html.find('id:"'+ident+'"',aircraft_start)
+              print("CATALOG",ident, (html[max(0,i-160):i+900] if i>=0 else "MISSING"))
+          for marker in ["const BATTLE_ASSET_DATA={"]:
+              start=0
+              while True:
+                  i=html.find(marker,start)
+                  if i<0: break
+                  end=html.find("};",i)
+                  print("ASSET KEYS:",re.findall(r'"([^"]+)":"data:image/png;base64,',html[i:end]))
+                  start=end+2
           PY
