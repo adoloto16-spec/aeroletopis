@@ -14,44 +14,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Decode targeted snippets
+      - name: Print exact game functions
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import base64, gzip, re
-
-          order = [
-              "kr-01a","kr-01b","kr-02","kr-03",
-              "kr-04q1","kr-04q2","kr-04q3","kr-04q4","kr-04b",
-              "kr-05a","kr-05b","kr-06a","kr-06b",
-              "kr-07q1","kr-07q2","kr-07q3","kr-07q4","kr-07b",
-              "kr-08q1","kr-08q2","kr-08q3","kr-08q4","kr-08b"
-          ]
-          raw = "".join(Path("site", name + ".b64").read_text(encoding="utf-8").strip() for name in order)
-          html = gzip.decompress(base64.b64decode(raw, validate=True)).decode("utf-8")
-
-          def show(label, start, end, cap=5000):
-              print("\\n===== " + label + " =====")
-              if start < 0:
-                  print("NOT FOUND")
-                  return
-              s = html[start:end]
-              print(s[:cap])
-              if len(s) > cap: print("...TRUNCATED", len(s)-cap)
-
-          for term in ["ангар", "hangar", "AIRCRAFT=", "SOURCES=", "const SOURCES", "function renderAircraft", "function battleRenderSelection", "function battleDraw(", "function battleDrawPlane", "function battleDrawBullet", "function battleDrawTank", "function battleMove(", "function battleDestroyTank", "function battleUpdateHud"]:
-              hits = [m.start() for m in re.finditer(re.escape(term),html,re.I)]
-              print("\\nTERM",term,"HITS",hits[:10])
-              for i in hits[:3]: show(term+" @"+str(i),max(0,i-150),min(len(html),i+min(cap if (cap:=5200) else 5200,5200)),5200)
-
-          a=html.find("const AIRCRAFT=[")
-          z=html.find("const PEOPLE=",a)
-          if z<0: z=html.find("const EVENTS=",a)
-          show("AIRCRAFT ARRAY",a,z,18000)
-          b=html.find("function battleRenderSelection")
-          show("BATTLE RENDER SELECTION",b,html.find("function battleCanvasSize",b),6000)
-          d=html.find("function battleDraw(ctx")
-          if d<0: d=html.find("function battleDraw()")
-          show("BATTLE DRAW",d,html.find("function battleUpdateHud",d),7500)
+          import base64,gzip,re
+          order=["kr-01a","kr-01b","kr-02","kr-03","kr-04q1","kr-04q2","kr-04q3","kr-04q4","kr-04b","kr-05a","kr-05b","kr-06a","kr-06b","kr-07q1","kr-07q2","kr-07q3","kr-07q4","kr-07b","kr-08q1","kr-08q2","kr-08q3","kr-08q4","kr-08b"]
+          raw="".join(Path("site",n+".b64").read_text().strip() for n in order)
+          h=gzip.decompress(base64.b64decode(raw)).decode()
+          for term in ["function battleRenderSelection","function battleDraw(ctx","function battleDraw()","function battleDrawBullet","function battleDrawTank","function battleMove","function renderAircraft","const SOURCES","const SOURCE","function openId"]:
+              i=h.find(term)
+              print("\\n###",term,i)
+              if i>=0: print(h[i:i+4500])
+          print("\\n### HANGAR/ARCHIVE TERMS")
+          for m in re.finditer("ангар|hangar",h,re.I):
+              print(m.start(),h[max(0,m.start()-200):m.start()+500])
           PY
