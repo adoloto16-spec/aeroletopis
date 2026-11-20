@@ -1,0 +1,33 @@
+name: Inspect Air Battle source
+on:
+  push:
+    branches:
+      - feature/knastu-sj100-airbattle
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Inspect compressed release source
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, gzip
+          order = ["kr-01a","kr-01b","kr-02","kr-03","kr-04q1","kr-04q2","kr-04q3","kr-04q4","kr-04b","kr-05a","kr-05b","kr-06a","kr-06b","kr-07q1","kr-07q2","kr-07q3","kr-07q4","kr-07b","kr-08q1","kr-08q2","kr-08q3","kr-08q4","kr-08b"]
+          payload = "".join(Path("site", n + ".b64").read_text().strip() for n in order)
+          html = gzip.decompress(base64.b64decode(payload)).decode()
+          terms = ["BATTLE_SPRITES","BATTLE_STATS","BATTLE_ASSET_DATA","battleLoadPlaneImage","battleDrawPlaneGlyph","mig-29","su-57"]
+          for term in terms:
+              print("\\n===== " + term + " =====")
+              start = 0
+              count = 0
+              while count < 6:
+                  i = html.find(term, start)
+                  if i < 0: break
+                  print(html[max(0,i-700):min(len(html),i+1300)].replace("\\n"," ")[:2100])
+                  start = i + len(term)
+                  count += 1
+          PY
