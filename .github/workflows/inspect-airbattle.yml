@@ -25,5 +25,9 @@ jobs:
               print("\n###",key,"occurrences",len(hits))
               for i in hits[:3]:
                   print(html[max(0,i-250):min(len(html),i+1800)].replace("\n"," ")[:2200])
+          m = re.search(r"const AIRCRAFT=\[(.*?)\];", html, re.S)
+          if m:
+              rows = re.findall(r'id:"([^"]+)",name:"([^"]+)"', m.group(1))
+              print("\nAIRCRAFT_IDS", rows)
           print("\nHTML_LENGTH",len(html))
           PY
