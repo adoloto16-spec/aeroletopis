@@ -24,7 +24,7 @@
 - Казанский авиационный завод — РБК: https://rt.rbc.ru/tatarstan/freenews/674580a49a7947f24746c30a
 - Авиастар-СП — HDPic: https://hdpic.club/photo/26010-produkcija-kompanii-uljanovskij-aviacionnyj-promyshlennyj-kompleks-aviastar-37-foto.html
 - Иркутский авиационный завод — 50skyshades: https://50skyshades.com/news/manufacturer/irkutsk-aviation-plant-to-produce-the-first-10-serial-mc-21-aircraft-by-2020
-- Новосибирский авиационный завод — KMC-IA: https://kmc-ia.ru/wp-content/uploads/2024/03/novosibirskij-aviatsionnij-zavod-chkalova-v-p.jpg
+- Новосибирский авиационный завод — см. ниже
 - ВАСО — AviaStat/AEX image: https://www.aviastat.ru/news/248635-voronezhskiy-aviazavod-planiruet-do-konca-2023-goda-nabrat-15-tys-novyh-rabochih
 - ОДК-УМПО — Ufa Vedomosti: https://ufaved.info/vedomosti/chetverg/samoe-luchshee-predpriyatie-/
 - ОДК-Кузнецов — HDPic: https://hdpic.club/photo/24761-produkcija-oao-kuznecov-37-foto.html
@@ -50,3 +50,24 @@
 ## Возвращённые игровые иконки v25
 
 - site/assets/air-battle/aircraft/mig-15.png и mig-21.png предоставлены владельцем проекта. В загруженных файлах нет отдельных сведений об авторстве или лицензии; репозиторий не приписывает изображения сторонним авторам и не заявляет открытую лицензию.
+
+## Новый спрайт «Авиабитвы»
+
+- `site/assets/air-battle/aircraft/ilya-muromets.png` — оригинальная игровая иллюстрация, созданная встроенным ImageGen. Референс формы — средняя проекция на чертеже С-22 в статье В. М. Корнеева и Е. В. Антонец, с. 18. Отдельное промежуточное крыло раннего образца не использовано. [Сборник УлГТУ](https://lib.ulstu.ru/venec/disk/2014/160.pdf)
+- Карточки МиГ-31 и Су-25 используют уже существующие пользовательские спрайты с пометкой «Иллюстрация · вид сверху».
+
+
+## Локальные фотографии музея
+
+- `site/assets/museum/novosibirsk-plant.jpg` — сборочный цех НАЗ им. Чкалова, 6 марта 2013 года. Пресс-служба Президента России / Kremlin.ru. Файл сохранён без изменений. [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Chkalov_Novosibirsk_Aviation_Plant.jpeg) · [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+- `site/assets/museum/leningrad-1941.jpg` — ленинградцы слушают сообщение о нападении Германии на СССР, 22 июня 1941 года. Фото Бориса Лосина, помечено на Wikimedia Commons как общественное достояние в России. Файл сохранён без изменений. [Военный альбом](https://waralbum.ru/341349/)
+
+
+## Фон «Авиабитвы»
+
+Две текстуры `site/assets/air-battle/backgrounds/meadow-01.webp` и `meadow-02.webp` созданы встроенным ImageGen. Первый промпт задаёт фотореалистичный луг с редкими кустами, строго вертикальный вид сверху и мягкое рассеянное освещение. Второй использует первую текстуру как референс и меняет расположение кустов, сохраняя масштаб, свет и палитру.
+
+
+## Иконки бомб и боссов «Авиабитвы»
+
+Встроенный ImageGen создал прозрачный атлас 2 × 2. Промпт задаёт три силуэта в ракурсе строго сверху и носом вниз — фиолетовый перехватчик с голубой подсветкой, красный стреловидный истребитель и золотой корабль с зелёным ядром. Четвёртая ячейка содержит бомбу на трёх янтарных шариках. Спрайты сохранены как `site/assets/air-battle/bosses/{ray,phantom,hive}.webp` и `site/assets/air-battle/powerups/bombs.webp`.
