@@ -1,0 +1,30 @@
+name: Apply Aeroletopis aviation and battle updates
+
+on:
+  push:
+    branches:
+      - feature/knastu-sj100-airbattle
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v6
+        with:
+          ref: feature/knastu-sj100-airbattle
+      - name: Rebuild and update compressed release
+        run: python3 scripts/update_release.py
+      - name: Commit updated website and release archive
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site index.html README.md IMAGE_LICENSES.md
+          git diff --cached --check
+          git commit -m "feat: add KnAGU, SJ-100 and improve air battle"
+          git push origin HEAD:feature/knastu-sj100-airbattle
