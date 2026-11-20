@@ -62,7 +62,7 @@ jobs:
                   if p.is_absolute() or ".." in p.parts:
                       raise SystemExit(f"Unsafe archive path: {name}")
                   data = z.read(name)
-                  if len(data) < 33 or data[:8] != b"\\x89PNG\\r\\n\\x1a\\n":
+                  if len(data) < 33 or data[:8] != bytes((137, 80, 78, 71, 13, 10, 26, 10)):
                       raise SystemExit(f"Invalid PNG: {name}")
                   width, height = struct.unpack(">II", data[16:24])
                   if (width, height) != (512, 512):
