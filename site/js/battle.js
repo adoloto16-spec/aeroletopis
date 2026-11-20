@@ -41,8 +41,8 @@ const BATTLE_BEST_KEY = "kr-battle-best";
 const battle = {
   selected:BATTLE_STARTER, mode:"ready", width:0, height:0,
   best:0, score:0, wave:1, waveKills:0, kills:0, health:0,
-  keys:new Set(), targetX:null, activePointer:null,
-  playerX:0, velocity:0, bank:0, hitUntil:0, shotGuardUntil:0,
+  keys:new Set(), target:null, activePointer:null,
+  playerX:0, playerY:0, velocityX:0, velocityY:0, bank:0, hitUntil:0, shotGuardUntil:0,
   time:0, last:0, raf:0, nextShot:0, nextTank:0, nextDrone:0, nextPowerup:0,
   bullets:[], tanks:[], drones:[], powerups:[], balloons:[], enemyShots:[], explosions:[], buffs:{},
   boss:null, blast:null, bombs:0, lastBomb:-Infinity, nextBalloon:0,
@@ -58,12 +58,16 @@ function battleUnlocked(id) {
 function battleProfile() {
   return BATTLE_PROFILES[battle.selected];
 }
-function battlePlaneY() {
+function battleStartY() {
   return battle.height-battleProfile().size*.7;
 }
 function battleClampX(x) {
   const pad=Math.min(battleProfile().size*.58,battle.width/2);
   return Math.max(pad,Math.min(battle.width-pad,x));
+}
+function battleClampY(y) {
+  const pad=Math.min(battleProfile().size*.66,battle.height/2);
+  return Math.max(pad,Math.min(battle.height-pad,y));
 }
 function battleImage(path) {
   if (!battle.images.has(path)) {
@@ -117,10 +121,12 @@ function battleResize() {
       }
     }
   }
-  const playerRatio=battle.width?battle.playerX/battle.width:.5;
+  const xRatio=battle.width?battle.playerX/battle.width:.5;
+  const yRatio=battle.height?battle.playerY/battle.height:null;
   Object.assign(battle,{width:w,height:h,dpr});
-  battle.playerX=battleClampX(playerRatio*w);
-  battle.targetX=null;
+  battle.playerX=battleClampX(xRatio*w);
+  battle.playerY=battleClampY(yRatio===null?battleStartY():yRatio*h);
+  battle.target=null;
   battle.canvas.width=Math.round(w*dpr);
   battle.canvas.height=Math.round(h*dpr);
   battle.ctx.setTransform(dpr,0,0,dpr,0,0);
@@ -153,14 +159,15 @@ function battleHud() {
 }
 function battleClearInput() {
   battle.keys.clear();
-  battle.targetX=null;
+  battle.target=null;
   battle.activePointer=null;
 }
 function battleReset() {
   cancelAnimationFrame(battle.raf);
   Object.assign(battle,{
     mode:"ready", score:0, kills:0, wave:1, waveKills:0, health:battleProfile().hp,
-    playerX:battle.width/2, velocity:0, bank:0, time:0, hitUntil:0, shotGuardUntil:0,
+    playerX:battle.width/2, playerY:battleClampY(battleStartY()),
+    velocityX:0, velocityY:0, bank:0, time:0, hitUntil:0, shotGuardUntil:0,
     nextShot:0, nextTank:900, nextDrone:6500, nextPowerup:4000,
     bullets:[], tanks:[], drones:[], powerups:[], balloons:[], enemyShots:[], explosions:[], buffs:{},
     bombs:2, lastBomb:-Infinity, nextBalloon:4500, boss:null, blast:null
@@ -197,7 +204,7 @@ function battleFinish(reason) {
   battle.health=0;
   battle.mode="finished";
   battleClearInput();
-  battleExplode(battle.playerX,battlePlaneY(),battleProfile().size*1.8);
+  battleExplode(battle.playerX,battle.playerY,battleProfile().size*1.8);
   const result=reason+" Итоговый счёт — "+battle.score+".";
   battleSetOverlay("Вылет завершён",result,"НАЧАТЬ ЗАНОВО →");
   battleSetStatus(result);
@@ -214,7 +221,7 @@ function battleBombReady() {
 }
 function battleDropBomb() {
   if(battle.mode!=="running" || !battleBombReady()) return;
-  const s=battleProfile(), x=battle.playerX, y=battlePlaneY();
+  const s=battleProfile(), x=battle.playerX, y=battle.playerY;
   const radius=s.bombRadius*(battle.buffs.triple>battle.time?1.35:1);
   const damage=s.bombDamage*(battle.buffs.damage>battle.time?1.8:1);
   battle.bombs--;
@@ -265,7 +272,7 @@ function battleFire() {
   const damage=s.damage*(battle.buffs.damage>battle.time?1.8:1);
   for(const angle of angles) {
     battle.bullets.push({
-      x:battle.playerX+Math.sin(angle)*18, y:battlePlaneY()-s.size*.38,
+      x:battle.playerX+Math.sin(angle)*18, y:battle.playerY-s.size*.38,
       vx:Math.sin(angle)*s.bullet, vy:-Math.cos(angle)*s.bullet, damage
     });
   }
@@ -329,7 +336,7 @@ function battleBossAttack(boss,kind) {
     }
     return;
   }
-  const aim=Math.atan2(battle.playerX-x,Math.max(20,battlePlaneY()-y));
+  const aim=Math.atan2(battle.playerX-x,battle.playerY-(y+20));
   const angles=kind==="aim"?[aim-.13,aim,aim+.13]:[-.68,-.44,-.22,0,.22,.44,.68];
   const speed=kind==="aim"?260:204;
   for(const angle of angles) {
@@ -342,7 +349,7 @@ function battleMoveBoss(step) {
   const elapsed=battle.time-b.born;
   const top=Math.min(153,battle.height*.28);
   const dive=Math.pow((1-Math.cos(elapsed/1950))/2,5);
-  const targetY=top+Math.max(0,battlePlaneY()-58-top)*dive;
+  const targetY=top+Math.max(0,battleStartY()-58-top)*dive;
   b.x=battle.width/2+Math.sin(elapsed/1390)*Math.max(0,battle.width-b.size)*.37;
   b.y+=Math.max(-155*step,Math.min(155*step,targetY-b.y));
   if(battle.time>=b.nextAttack) {
@@ -352,7 +359,7 @@ function battleMoveBoss(step) {
   }
 }
 function battleMoveEnemyShots(step) {
-  const y=battlePlaneY(), radius=battleProfile().size*.25;
+  const y=battle.playerY, radius=battleProfile().size*.25;
   battle.enemyShots=battle.enemyShots.filter(shot=>{
     shot.x+=shot.vx*step;
     shot.y+=shot.vy*step;
@@ -363,24 +370,31 @@ function battleMoveEnemyShots(step) {
       }
       return false;
     }
-    return shot.y<battle.height+26 && shot.x>-26 && shot.x<battle.width+26;
+    return shot.y>-26 && shot.y<battle.height+26 && shot.x>-26 && shot.x<battle.width+26;
   });
 }
 function battleMovePlayer(step) {
   const s=battleProfile();
   const left=battle.keys.has("arrowleft")||battle.keys.has("a");
   const right=battle.keys.has("arrowright")||battle.keys.has("d");
-  let targetVelocity=(Number(right)-Number(left))*s.move;
-  if (!left && !right && battle.targetX!==null) {
-    const distance=battle.targetX-battle.playerX;
-    targetVelocity=Math.sign(distance)*Math.min(Math.abs(distance)*12,s.move);
+  let desiredX=(Number(right)-Number(left))*s.move, desiredY=0;
+  if(!left && !right && battle.target) {
+    desiredX=(battle.target.x-battle.playerX)*12;
+    desiredY=(battle.target.y-battle.playerY)*12;
   }
-  const delta=targetVelocity-battle.velocity, maxDelta=s.turn*step;
-  battle.velocity+=Math.sign(delta)*Math.min(Math.abs(delta),maxDelta);
-  const next=battle.playerX+battle.velocity*step;
-  battle.playerX=battleClampX(next);
-  if(battle.playerX!==next) battle.velocity=0;
-  const banking=battle.velocity/s.move*.25;
+  const limit=Math.max(1,Math.hypot(desiredX,desiredY)/s.move);
+  const dx=desiredX/limit-battle.velocityX, dy=desiredY/limit-battle.velocityY;
+  const acceleration=Math.min(1,s.turn*step/Math.max(1,Math.hypot(dx,dy)));
+  battle.velocityX+=dx*acceleration;
+  battle.velocityY+=dy*acceleration;
+
+  const nextX=battle.playerX+battle.velocityX*step;
+  const nextY=battle.playerY+battle.velocityY*step;
+  battle.playerX=battleClampX(nextX);
+  battle.playerY=battleClampY(nextY);
+  if(battle.playerX!==nextX) battle.velocityX=0;
+  if(battle.playerY!==nextY) battle.velocityY=0;
+  const banking=battle.velocityX/s.move*.25;
   battle.bank+=(banking-battle.bank)*Math.min(1,step*12);
 }
 function battleMoveBullets(step) {
@@ -404,8 +418,9 @@ function battleMoveBullets(step) {
   }
 }
 function battleMove(dt) {
-  const step=dt/1000, planeY=battlePlaneY(), s=battleProfile();
+  const step=dt/1000, s=battleProfile();
   battleMovePlayer(step);
+  const planeY=battle.playerY;
   battle.explosions=battle.explosions.filter(e=>battle.time-e.time<650);
 
   for(const t of battle.tanks) t.y+=t.speed*step;
@@ -648,7 +663,7 @@ function battleDraw() {
   }
   battleDrawBlast(ctx,time);
   if(battle.health>0) {
-    const size=battleProfile().size*1.16,y=battlePlaneY();
+    const size=battleProfile().size*1.16,y=battle.playerY;
     const alpha=time<battle.hitUntil && Math.floor(time/95)%2===0?.55:1;
     if(!battleDrawSprite(battleAircraftPath(battle.selected),battle.playerX,y,size,size,battle.bank,alpha)) {
       ctx.save();
@@ -718,7 +733,8 @@ function battleInit() {
     $('[data-battle-aircraft="'+id+'"]').focus({preventScroll:true});
   });
   const setTarget=e=>{
-    battle.targetX=battleClampX(e.clientX-battle.canvas.getBoundingClientRect().left);
+    const rect=battle.canvas.getBoundingClientRect();
+    battle.target={x:battleClampX(e.clientX-rect.left),y:battleClampY(e.clientY-rect.top)};
   };
   battle.field.addEventListener("pointerdown",e=>{
     if(battle.mode!=="running" || !e.isPrimary || e.button!==0 || e.target.closest("button")) return;
@@ -733,7 +749,7 @@ function battleInit() {
     if(e.pointerId===battle.activePointer) battle.activePointer=null;
   });
   battle.field.addEventListener("pointerleave",()=>{
-    if(battle.activePointer===null) battle.targetX=null;
+    if(battle.activePointer===null) battle.target=null;
   });
   const movement=["arrowleft","arrowright","a","d"];
   window.addEventListener("keydown",e=>{
@@ -746,7 +762,7 @@ function battleInit() {
     const key=e.key.toLowerCase();
     if(movement.includes(key)) {
       battle.keys.add(key);
-      battle.targetX=null;
+      battle.target=null;
       e.preventDefault();
     }
     if(key==="escape") {
