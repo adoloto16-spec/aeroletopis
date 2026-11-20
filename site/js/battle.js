@@ -1,16 +1,16 @@
 const BATTLE_PROFILES = {
-  "ilya-muromets": {size:80, move:270, turn:850, hp:4, fire:760, damage:6.8, bullet:650, spread:.115, bombDamage:32, bombRadius:132},
-  "il-2":          {size:72, move:315, turn:1400, hp:4, fire:400, damage:6, bullet:720, bombDamage:31, bombRadius:124},
-  "yak-3":         {size:65, move:365, turn:2550, hp:2, fire:240, damage:3.6, bullet:765, bombDamage:19, bombRadius:91},
-  "mig-15":        {size:69, move:345, turn:2000, hp:3, fire:430, damage:7, bullet:800, bombDamage:23, bombRadius:104},
-  "mig-21":        {size:72, move:420, turn:1550, hp:2, fire:320, damage:5.1, bullet:920, bombDamage:22, bombRadius:98},
-  "mig-29":        {size:76, move:380, turn:2250, hp:3, fire:290, damage:4.8, bullet:850, bombDamage:25, bombRadius:108},
-  "mig-31":        {size:86, move:440, turn:1190, hp:3, fire:465, damage:9.1, bullet:980, bombDamage:30, bombRadius:113},
-  "su-25":         {size:83, move:295, turn:1150, hp:5, fire:620, damage:5.4, bullet:750, spread:.09, bombDamage:40, bombRadius:137},
-  "su-27":         {size:80, move:375, turn:1780, hp:4, fire:375, damage:6.5, bullet:865, bombDamage:29, bombRadius:118},
-  "su-34":         {size:86, move:310, turn:1050, hp:5, fire:570, damage:10.2, bullet:805, bombDamage:44, bombRadius:145},
-  "su-35":         {size:80, move:395, turn:2400, hp:3, fire:590, damage:5.1, bullet:875, spread:.065, bombDamage:28, bombRadius:107},
-  "su-57":         {size:78, move:410, turn:2130, hp:3, fire:270, damage:4.6, bullet:940, bombDamage:27, bombRadius:112}
+  "ilya-muromets": {size:80, move:270, turn:850, hp:108, fire:760, damage:6.8, bullet:650, spread:.115, bombDamage:32, bombRadius:132},
+  "il-2":          {size:72, move:315, turn:1400, hp:100, fire:400, damage:6, bullet:720, bombDamage:31, bombRadius:124},
+  "yak-3":         {size:65, move:365, turn:2550, hp:62, fire:240, damage:3.6, bullet:765, bombDamage:19, bombRadius:91},
+  "mig-15":        {size:69, move:345, turn:2000, hp:82, fire:430, damage:7, bullet:800, bombDamage:23, bombRadius:104},
+  "mig-21":        {size:72, move:420, turn:1550, hp:68, fire:320, damage:5.1, bullet:920, bombDamage:22, bombRadius:98},
+  "mig-29":        {size:76, move:380, turn:2250, hp:88, fire:290, damage:4.8, bullet:850, bombDamage:25, bombRadius:108},
+  "mig-31":        {size:86, move:440, turn:1190, hp:112, fire:465, damage:9.1, bullet:980, bombDamage:30, bombRadius:113},
+  "su-25":         {size:83, move:295, turn:1150, hp:142, fire:620, damage:5.4, bullet:750, spread:.09, bombDamage:40, bombRadius:137},
+  "su-27":         {size:80, move:375, turn:1780, hp:116, fire:375, damage:6.5, bullet:865, bombDamage:29, bombRadius:118},
+  "su-34":         {size:86, move:310, turn:1050, hp:148, fire:570, damage:10.2, bullet:805, bombDamage:44, bombRadius:145},
+  "su-35":         {size:80, move:395, turn:2400, hp:96, fire:590, damage:5.1, bullet:875, spread:.065, bombDamage:28, bombRadius:107},
+  "su-57":         {size:78, move:410, turn:2130, hp:92, fire:270, damage:4.6, bullet:940, bombDamage:27, bombRadius:112}
 };
 const BATTLE_STARTER = "il-2";
 const BATTLE_FLEET = AIRCRAFT.filter(({id}) => Object.hasOwn(BATTLE_PROFILES, id))
@@ -29,19 +29,20 @@ const BATTLE_POWERUPS = {
   rapid:{file:"fire-rate.png", label:"ТЕМП ОГНЯ ↑"}
 };
 const BATTLE_BOSSES=[
-  {name:"Скат", sprite:"bosses/ray.webp", hp:96, size:115, cadence:3400, color:"#55e8ff", attacks:["aim","fan"]},
-  {name:"Фантом", sprite:"bosses/phantom.webp", hp:135, size:125, cadence:3100, color:"#ff789f", attacks:["fan","curtain","aim"]},
-  {name:"Улей", sprite:"bosses/hive.webp", hp:170, size:135, cadence:2850, color:"#a7ef80", attacks:["curtain","aim","fan"]}
+  {name:"Скат", sprite:"bosses/ray.webp", hp:96, shotDamage:22, size:115, cadence:3400, color:"#55e8ff", attacks:["aim","fan"]},
+  {name:"Фантом", sprite:"bosses/phantom.webp", hp:135, shotDamage:30, size:125, cadence:3100, color:"#ff789f", attacks:["fan","curtain","aim"]},
+  {name:"Улей", sprite:"bosses/hive.webp", hp:170, shotDamage:38, size:135, cadence:2850, color:"#a7ef80", attacks:["curtain","aim","fan"]}
 ];
 const BATTLE_ATTACK_LABELS={aim:"Прицельная очередь",fan:"Веер",curtain:"Огневая завеса"};
 const BATTLE_BOMB_LIMIT=5;
+const BATTLE_DRONE_DAMAGE=50;
 const BATTLE_WAVE_KILLS=15;
 const BATTLE_BEST_KEY = "kr-battle-best";
 const battle = {
   selected:BATTLE_STARTER, mode:"ready", width:0, height:0,
   best:0, score:0, wave:1, waveKills:0, kills:0, health:0,
   keys:new Set(), targetX:null, activePointer:null,
-  playerX:0, velocity:0, bank:0, hitUntil:0,
+  playerX:0, velocity:0, bank:0, hitUntil:0, shotGuardUntil:0,
   time:0, last:0, raf:0, nextShot:0, nextTank:0, nextDrone:0, nextPowerup:0,
   bullets:[], tanks:[], drones:[], powerups:[], balloons:[], enemyShots:[], explosions:[], buffs:{},
   boss:null, blast:null, bombs:0, lastBomb:-Infinity, nextBalloon:0,
@@ -94,7 +95,7 @@ function battleRenderSelection() {
   $("#battlePlaneTier").textContent=a.type;
   const stats=[
     ["СКОРОСТЬ",s.move+" ед./с"],["МАНЁВРЕННОСТЬ",s.turn+" ед./с²"],
-    ["ЗАЩИТА ОТ ВЫСТРЕЛОВ",s.hp],["УРОН БОМБЫ",s.bombDamage],["РАДИУС БОМБЫ",s.bombRadius+" ед."],["УРОН СНАРЯДА",s.damage],
+    ["ПРОЧНОСТЬ",s.hp],["УРОН БОМБЫ",s.bombDamage],["РАДИУС БОМБЫ",s.bombRadius+" ед."],["УРОН СНАРЯДА",s.damage],
     ["ТЕМП ЗАЛПОВ",(1000/s.fire).toFixed(1)+"/с"],["СКОРОСТЬ СНАРЯДА",s.bullet+" ед./с"]
   ];
   $("#battleStats").innerHTML=`<div class="battle-grade">ИГРОВЫЕ ХАРАКТЕРИСТИКИ</div>
@@ -138,7 +139,7 @@ function battleSetStatus(text) {
 function battleHud() {
   const active=Object.keys(BATTLE_POWERUPS).filter(id=>battle.buffs[id]>battle.time);
   const stage=battle.boss?"БОСС «"+battle.boss.profile.name+"»":battle.waveKills+"/"+BATTLE_WAVE_KILLS;
-  const text="ВОЛНА "+battle.wave+" · "+stage+" · ЗАЩИТА "+battle.health+"/"+battleProfile().hp+" · РЕКОРД "+battle.best+
+  const text="ВОЛНА "+battle.wave+" · "+stage+" · ПРОЧНОСТЬ "+battle.health+"/"+battleProfile().hp+" · РЕКОРД "+battle.best+
     (active.length?" · "+active.map(id=>BATTLE_POWERUPS[id].label).join(" / "):"");
   const wave=$("#battleWave"),score=$("#battleScore");
   if(wave.textContent!==text) wave.textContent=text;
@@ -159,7 +160,7 @@ function battleReset() {
   cancelAnimationFrame(battle.raf);
   Object.assign(battle,{
     mode:"ready", score:0, kills:0, wave:1, waveKills:0, health:battleProfile().hp,
-    playerX:battle.width/2, velocity:0, bank:0, time:0, hitUntil:0,
+    playerX:battle.width/2, velocity:0, bank:0, time:0, hitUntil:0, shotGuardUntil:0,
     nextShot:0, nextTank:900, nextDrone:6500, nextPowerup:4000,
     bullets:[], tanks:[], drones:[], powerups:[], balloons:[], enemyShots:[], explosions:[], buffs:{},
     bombs:2, lastBomb:-Infinity, nextBalloon:4500, boss:null, blast:null
@@ -201,6 +202,12 @@ function battleFinish(reason) {
   battleSetOverlay("Вылет завершён",result,"НАЧАТЬ ЗАНОВО →");
   battleSetStatus(result);
 }
+function battleDamagePlayer(damage,reason) {
+  battle.health=Math.max(0,battle.health-damage);
+  battle.hitUntil=battle.time+360;
+  if(!battle.health) battleFinish(reason+" Самолёт сбит.");
+  else battleSetStatus(reason+" −"+damage+" · Прочность "+battle.health+"/"+battleProfile().hp+".");
+}
 function battleBombReady() {
   const cooldown=battle.buffs.rapid>battle.time?820:1500;
   return battle.bombs>0 && battle.time-battle.lastBomb>=cooldown;
@@ -226,7 +233,7 @@ function battleSpawnBalloon() {
 
 function battleSpawnTank() {
   const size=Math.min(60,43+battle.wave);
-  const hp=6+Math.floor(battle.time/18000)+Math.floor(battle.kills/18);
+  const hp=15+Math.floor((battle.wave-1)*1.25);
   battle.tanks.push({
     x:size/2+Math.random()*Math.max(0,battle.width-size), y:-size,
     size,hp,maxHp:hp,points:10,speed:52+Math.min(58,battle.time/1600)+Math.random()*20
@@ -312,13 +319,13 @@ function battleSpawnBoss() {
 }
 function battleBossAttack(boss,kind) {
   const {x,y,profile}=boss;
-  const shots=battle.enemyShots;
+  const shots=battle.enemyShots, payload={damage:profile.shotDamage,color:profile.color};
   if(kind==="curtain") {
     const lanes=Math.max(4,Math.round(battle.width/58));
     const gap=(Math.floor(boss.attackIndex/2)+1)%(lanes-1);
     for(let lane=0;lane<lanes;lane++) {
       if(lane===gap || lane===gap+1) continue;
-      shots.push({x:(lane+.5)*battle.width/lanes,y:y+21,vx:0,vy:225,r:9,color:profile.color});
+      shots.push({x:(lane+.5)*battle.width/lanes,y:y+21,vx:0,vy:225,r:9,...payload});
     }
     return;
   }
@@ -326,7 +333,7 @@ function battleBossAttack(boss,kind) {
   const angles=kind==="aim"?[aim-.13,aim,aim+.13]:[-.68,-.44,-.22,0,.22,.44,.68];
   const speed=kind==="aim"?260:204;
   for(const angle of angles) {
-    shots.push({x,y:y+20,vx:Math.sin(angle)*speed,vy:Math.cos(angle)*speed,r:7,color:profile.color});
+    shots.push({x,y:y+20,vx:Math.sin(angle)*speed,vy:Math.cos(angle)*speed,r:7,...payload});
   }
 }
 function battleMoveBoss(step) {
@@ -350,11 +357,9 @@ function battleMoveEnemyShots(step) {
     shot.x+=shot.vx*step;
     shot.y+=shot.vy*step;
     if(Math.hypot(shot.x-battle.playerX,shot.y-y)<shot.r+radius) {
-      if(battle.time>=battle.hitUntil) {
-        battle.hitUntil=battle.time+720;
-        battle.health--;
-        if(!battle.health) battleFinish("Самолёт сбит выстрелом босса.");
-        else battleSetStatus("Попадание. Защита: "+battle.health+".");
+      if(battle.mode==="running" && battle.time>=battle.shotGuardUntil) {
+        battle.shotGuardUntil=battle.time+720;
+        battleDamagePlayer(shot.damage,"Попадание выстрела босса.");
       }
       return false;
     }
@@ -443,9 +448,17 @@ function battleMove(dt) {
     return p.y<battle.height+32;
   });
   const collided=enemy=>Math.hypot(enemy.x-battle.playerX,enemy.y-planeY)<s.size*.28+enemy.size*.39;
-  if(battle.drones.some(collided) || battle.tanks.some(collided) || (battle.boss && collided(battle.boss))) {
-    battleFinish("Самолёт уничтожен при столкновении.");
+  if(battle.boss && collided(battle.boss)) {
+    battleFinish("Самолёт уничтожен при столкновении с корпусом босса.");
     return;
+  }
+  for(let i=battle.drones.length-1;i>=0;i--) {
+    const drone=battle.drones[i];
+    if(!collided(drone)) continue;
+    battle.drones.splice(i,1);
+    battleExplode(drone.x,drone.y,drone.size*1.65);
+    battleDamagePlayer(BATTLE_DRONE_DAMAGE,"Столкновение с дроном.");
+    if(battle.mode!=="running") return;
   }
   battleMoveEnemyShots(step);
 }
