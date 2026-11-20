@@ -10,24 +10,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Extract precise integration source
+      - name: Extract integration anchors
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import base64,gzip,re
+          import base64,gzip
           order=["kr-01a","kr-01b","kr-02","kr-03","kr-04q1","kr-04q2","kr-04q3","kr-04q4","kr-04b","kr-05a","kr-05b","kr-06a","kr-06b","kr-07q1","kr-07q2","kr-07q3","kr-07q4","kr-07b","kr-08q1","kr-08q2","kr-08q3","kr-08q4","kr-08b"]
           html=gzip.decompress(base64.b64decode("".join(Path("site",n+".b64").read_text().strip() for n in order))).decode()
-          m=re.search(r"const AIRCRAFT=\\[(.*?)\\];",html,re.S)
-          if m:
-              catalog=m.group(1)
-              for ident in ["mig-15","mig-21","mig-29","su-27","su-34","su-35","su-57"]:
-                  found=re.search(r"\\{id:\\\""+re.escape(ident)+r"\\\".*?sources:\\[[^]]*\\]\\}",catalog)
-                  print("\\nCATALOG "+ident+" : "+(found.group(0) if found else "NOT FOUND"))
-          for term in ["МиГ-31","Су-25","МиГ-15","МиГ-21"]:
-              print("TEXT_COUNT",term,html.count(term))
-          for pat in [r"(?:const|let|var)\\s+battle\\s*=\\s*\\{",r"function battleDrawPlaneGlyph\\(.*?\\n\\}",r"function battleDrawTank\\(.*?\\n\\}",r"function battleDrawPowerup\\(.*?\\n\\}",r"function battleDrawDrone\\(.*?\\n\\}",r"function battleCreateBullet\\(.*?\\n\\}",r"function battleDraw\\(\\).*?\\n\\}"]:
-              mm=re.search(pat,html,re.S)
-              print("\\nCODE "+pat+" : "+(mm.group(0) if mm else "NOT FOUND")[:3500])
+          for ident in ["id:"+chr(34)+"mig-15"+chr(34),"id:"+chr(34)+"mig-21"+chr(34),"id:"+chr(34)+"mig-29"+chr(34),"id:"+chr(34)+"su-27"+chr(34),"id:"+chr(34)+"su-34"+chr(34)]:
+              p=html.find(ident)
+              if p>=0:
+                  a=html.rfind("\\n{",0,p)
+                  b=html.find("\\n{",p+1)
+                  print("\\nRECORD "+ident+"\\n"+html[a:b if b>=0 else a+4000])
+              else: print("\\nRECORD "+ident+" NOT FOUND")
+          for token in ["const SOURCES","let SOURCES","SOURCES=[" ,"battle={","battle = {","function battleDrawTank","function battleDrawPowerup","function battleDrawDrone","function battleMove(dt)"]:
+              p=html.find(token)
+              print("\\nANCHOR "+token+" "+str(p))
+              if p>=0: print(html[p:p+3500])
           print("\\nHTML_LENGTH",len(html))
           PY
