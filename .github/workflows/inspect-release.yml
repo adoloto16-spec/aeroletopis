@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Decode release and inspect sections
+      - name: Decode and inspect implementation
         shell: bash
         run: |
           python3 - <<'PY'
@@ -30,18 +30,40 @@ jobs:
           ]
           raw = "".join(Path("site", name + ".b64").read_text(encoding="utf-8").strip() for name in order)
           html = gzip.decompress(base64.b64decode(raw, validate=True)).decode("utf-8")
-          print("HTML_LENGTH", len(html))
-          terms = [
-              "Авиационные центры", "КнААЗ", "Авиабитва", "Су-57", "Su-57",
-              "airBattle", "battleCanvas", "powerup", "powerUp", "playerBullets",
-              "enemyBullets", "battlePlanes", "battlePlanes", "aircraftCenters",
-              "centers:"
-          ]
-          for term in terms:
-              hits = list(re.finditer(re.escape(term), html, re.IGNORECASE))
-              print("\\n===== TERM", repr(term), "COUNT", len(hits), "=====")
-              for m in hits[:5]:
-                  start, end = max(0, m.start()-450), min(len(html), m.end()+850)
-                  print("OFFSET", m.start())
-                  print(html[start:end].replace("\\n", " ")[:1400])
+
+          def dump(label, start, end=None, limit=9000):
+              print("\\n===== " + label + " =====")
+              if start < 0:
+                  print("NOT FOUND")
+                  return
+              end = len(html) if end is None or end < 0 else end
+              value = html[start:end]
+              print(value[:limit])
+              if len(value) > limit:
+                  print("...TRUNCATED", len(value)-limit, "CHARS")
+
+          c = html.find('id="centersModule"')
+          b = html.find('id="battleModule"')
+          dump("CENTERS SECTION", c, b, 9000)
+
+          for term, limit in [
+              ("const AIRCRAFT", 7000),
+              ("const BATTLE_STATS", 5000),
+              ("const BATTLE_SPRITES", 5000),
+              ("const battle=", 2500),
+              ("function battleLoad", 6000),
+              ("function battleCreateBullet", 4000),
+              ("function battleDraw", 8000),
+              ("function battleUpdate", 8000),
+              ("function battleStart", 4000),
+              ("function battleLoop", 5000),
+          ]:
+              i = html.find(term)
+              dump(term, i, i+limit if i >= 0 else -1, limit)
+
+          print("\\n===== RELEVANT DECLARATIONS =====")
+          for m in re.finditer(r'(?:const|let|var|function)\\s+([A-Za-z_$][\\w$]*)', html):
+              name = m.group(1)
+              if any(k in name.lower() for k in ("aircraft","hangar","battle","sprite","center")):
+                  print(m.start(), name)
           PY
