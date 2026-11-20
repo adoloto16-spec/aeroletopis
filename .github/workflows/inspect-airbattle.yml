@@ -1,0 +1,29 @@
+name: Inspect Aeroletopis Air Battle code
+on:
+  push:
+    branches:
+      - feature/knastu-sj100-airbattle
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decode and inspect game code
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, gzip, re
+          order = ["kr-01a","kr-01b","kr-02","kr-03","kr-04q1","kr-04q2","kr-04q3","kr-04q4","kr-04b","kr-05a","kr-05b","kr-06a","kr-06b","kr-07q1","kr-07q2","kr-07q3","kr-07q4","kr-07b","kr-08q1","kr-08q2","kr-08q3","kr-08q4","kr-08b"]
+          b64 = "".join(Path("site",n+".b64").read_text().strip() for n in order)
+          html = gzip.decompress(base64.b64decode(b64)).decode()
+          keys = ["BATTLE_SPRITES","battleDrawPlaneGlyph","battleLoadThumbnail","battleLoadPlaneImage","battleDrawTank","battleSpawnTank","battleMove","battleDraw","battleSpawnPowerup","battleSpawnDrone","tankImage","powerups"]
+          for key in keys:
+              hits = [m.start() for m in re.finditer(re.escape(key),html)]
+              print("\n###",key,"occurrences",len(hits))
+              for i in hits[:5]:
+                  print(html[max(0,i-250):min(len(html),i+900)].replace("\n"," ")[:1200])
+          print("\nHTML_LENGTH",len(html))
+          PY
