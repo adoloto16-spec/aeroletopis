@@ -25,7 +25,7 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          import base64, gzip, re, struct
+          import base64, gzip, json, re, struct
 
           order = [
               "kr-01a","kr-01b","kr-02","kr-03",
@@ -106,7 +106,7 @@ jobs:
               html = html[:sources_end] + separator + "\n" + ",\n".join(source_additions) + html[sources_end:]
 
           # Replace game aircraft entries and balance profiles with the matching nine PNGs.
-          battle_constants = r'''const BATTLE_ASSET_BASE="assets/air-battle/";
+          battle_constants = r'''const BATTLE_ASSET_DATA=__BATTLE_ASSET_DATA__;
           const BATTLE_SPRITES={
             "il-2":{file:"aircraft/il-2.png"},
             "yak-3":{file:"aircraft/yak-3.png"},
@@ -131,6 +131,18 @@ jobs:
             "su-57":{title:"Су-57",era:"2010-е →",size:98,fire:158,damage:8.8,bullet:860,move:420,grade:"МНОГОЦЕЛЕВОЙ ИСТРЕБИТЕЛЬ ПЯТОГО ПОКОЛЕНИЯ"}
           };'''
           replace_between("const BATTLE_SPRITES={", "function battleSafeBest()", battle_constants, "Battle aircraft and balance tables")
+          asset_files = [
+              "aircraft/il-2.png","aircraft/yak-3.png","aircraft/mig-29.png",
+              "aircraft/mig-31.png","aircraft/su-25.png","aircraft/su-27.png",
+              "aircraft/su-34.png","aircraft/su-35.png","aircraft/su-57.png",
+              "effects/bullet.png","effects/drone.png","effects/explosion.png","effects/tank.png",
+              "powerups/triple.png","powerups/damage.png","powerups/fire-rate.png"
+          ]
+          asset_data = {
+              rel: "data:image/png;base64," + base64.b64encode(Path("site/assets/air-battle",rel).read_bytes()).decode("ascii")
+              for rel in asset_files
+          }
+          replace_once("__BATTLE_ASSET_DATA__", json.dumps(asset_data,separators=(",",":")), "Inline PNG data URLs")
           html = html.replace("/* V13 BATTLE GAME */", "/* V24 BATTLE GAME — LOCAL TRANSPARENT PNG SPRITES */")
 
           image_loader = r'''function battleLoadThumbnail(canvas,id){
@@ -181,7 +193,7 @@ jobs:
                   }
                 };
                 image.onerror=()=>console.warn("Не удалось загрузить игровой спрайт:",path);
-                image.src=BATTLE_ASSET_BASE+path;
+                image.src=BATTLE_ASSET_DATA[path]||"";
                 battle.images[group][id]=image;
               }
             }
@@ -332,23 +344,7 @@ jobs:
               raise SystemExit("Expected V23 release label in index.html")
           index_path.write_text(index_html_new,encoding="utf-8")
 
-          deploy_path=Path(".github/workflows/deploy.yml")
-          deploy=deploy_path.read_text(encoding="utf-8")
-          copy_step = '''      - name: Copy Air Battle PNG assets
-                shell: bash
-                run: |
-                  set -euo pipefail
-                  mkdir -p dist/assets
-                  if [ -d site/assets ]; then
-                    cp -a site/assets/. dist/assets/
-                  fi
-
-          '''
-          if "name: Copy Air Battle PNG assets" not in deploy:
-              if deploy.count("      - name: Setup Pages") != 1:
-                  raise SystemExit("Could not find unique Setup Pages step")
-              deploy=deploy.replace("      - name: Setup Pages",copy_step+"      - name: Setup Pages",1)
-              deploy_path.write_text(deploy,encoding="utf-8")
+          # All sprites are inline data URLs in the compressed page bundle; no deploy workflow changes are needed.
 
           licenses_path=Path("IMAGE_LICENSES.md")
           licenses=licenses_path.read_text(encoding="utf-8")
@@ -368,7 +364,7 @@ jobs:
           readme_note = '''
           ### Air Battle assets (v24)
 
-          The battle scene loads its nine aircraft and the tank, drone, projectile, explosion, and three power-up sprites from site/assets/air-battle/. The GitHub Pages workflow copies these assets into the published dist/assets/ tree.
+          The battle scene loads its nine aircraft and the tank, drone, projectile, explosion, and three power-up sprites from site/assets/air-battle/. The compressed page bundle carries the image bytes as data URLs, while the original PNG files remain in the repository.
           '''
           if "Air Battle assets (v24)" not in readme:
               readme += "\n" + readme_note
@@ -475,6 +471,6 @@ jobs:
           git diff --check
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add site index.html README.md IMAGE_LICENSES.md .github/workflows
+          git add site index.html README.md IMAGE_LICENSES.md
           git commit -m "feat: integrate transparent Air Battle PNG sprites"
           git push origin HEAD:feature/knastu-sj100-airbattle
