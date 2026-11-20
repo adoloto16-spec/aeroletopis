@@ -1,0 +1,47 @@
+name: Inspect Aeroletopis release payload
+
+on:
+  push:
+    branches:
+      - feature/knastu-sj100-airbattle
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Decode release and inspect sections
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, gzip, re
+
+          order = [
+              "kr-01a","kr-01b","kr-02","kr-03",
+              "kr-04q1","kr-04q2","kr-04q3","kr-04q4","kr-04b",
+              "kr-05a","kr-05b","kr-06a","kr-06b",
+              "kr-07q1","kr-07q2","kr-07q3","kr-07q4","kr-07b",
+              "kr-08q1","kr-08q2","kr-08q3","kr-08q4","kr-08b"
+          ]
+          raw = "".join(Path("site", name + ".b64").read_text(encoding="utf-8").strip() for name in order)
+          html = gzip.decompress(base64.b64decode(raw, validate=True)).decode("utf-8")
+          print("HTML_LENGTH", len(html))
+          terms = [
+              "Авиационные центры", "КнААЗ", "Авиабитва", "Су-57", "Su-57",
+              "airBattle", "battleCanvas", "powerup", "powerUp", "playerBullets",
+              "enemyBullets", "battlePlanes", "battlePlanes", "aircraftCenters",
+              "centers:"
+          ]
+          for term in terms:
+              hits = list(re.finditer(re.escape(term), html, re.IGNORECASE))
+              print("\\n===== TERM", repr(term), "COUNT", len(hits), "=====")
+              for m in hits[:5]:
+                  start, end = max(0, m.start()-450), min(len(html), m.end()+850)
+                  print("OFFSET", m.start())
+                  print(html[start:end].replace("\\n", " ")[:1400])
+          PY
