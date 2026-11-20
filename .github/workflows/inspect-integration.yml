@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Extract integration anchors
+      - name: Extract catalogue records and runtime hooks
         shell: bash
         run: |
           python3 - <<'PY'
@@ -18,16 +18,16 @@ jobs:
           import base64,gzip
           order=["kr-01a","kr-01b","kr-02","kr-03","kr-04q1","kr-04q2","kr-04q3","kr-04q4","kr-04b","kr-05a","kr-05b","kr-06a","kr-06b","kr-07q1","kr-07q2","kr-07q3","kr-07q4","kr-07b","kr-08q1","kr-08q2","kr-08q3","kr-08q4","kr-08b"]
           html=gzip.decompress(base64.b64decode("".join(Path("site",n+".b64").read_text().strip() for n in order))).decode()
-          for ident in ["id:"+chr(34)+"mig-15"+chr(34),"id:"+chr(34)+"mig-21"+chr(34),"id:"+chr(34)+"mig-29"+chr(34),"id:"+chr(34)+"su-27"+chr(34),"id:"+chr(34)+"su-34"+chr(34)]:
-              p=html.find(ident)
-              if p>=0:
-                  a=html.rfind("\\n{",0,p)
-                  b=html.find("\\n{",p+1)
-                  print("\\nRECORD "+ident+"\\n"+html[a:b if b>=0 else a+4000])
-              else: print("\\nRECORD "+ident+" NOT FOUND")
-          for token in ["const SOURCES","let SOURCES","SOURCES=[" ,"battle={","battle = {","function battleDrawTank","function battleDrawPowerup","function battleDrawDrone","function battleMove(dt)"]:
+          for token in ['id:"mig-15"','id:"mig-21"','id:"mig-29"','id:"su-27"','id:"su-34"']:
               p=html.find(token)
-              print("\\nANCHOR "+token+" "+str(p))
-              if p>=0: print(html[p:p+3500])
+              a=html.rfind("{id:",0,p)
+              b=html.find("\\n {id:",p+1)
+              if b<0: b=html.find("\\n{id:",p+1)
+              print("\\nRECORD "+token+"\\n"+html[a:b if b>=0 else a+3500][:3500])
+          p=html.find("const SOURCES=[")
+          print("\\nSOURCES ARRAY\\n"+html[p:p+8500])
+          for token in ["function battleClearEntities","function battleSpawnTank","function battleSpawnPowerup","function battleSpawnDrone","function battleCreateBullet","function battleMove(dt)","function battleStart()"]:
+              p=html.find(token)
+              print("\\nCODE "+token+"\\n"+(html[p:p+2200] if p>=0 else "NOT FOUND"))
           print("\\nHTML_LENGTH",len(html))
           PY
