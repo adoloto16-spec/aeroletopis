@@ -139,6 +139,15 @@ jobs:
           print(f"Release rebuilt successfully: {len(html):,} HTML characters")
           PY
 
+      - name: Copy Air Battle assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/assets
+          if [ -d site/assets ]; then
+            cp -a site/assets/. dist/assets/
+          fi
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 

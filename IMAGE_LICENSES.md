@@ -29,37 +29,24 @@
 - ОДК-УМПО — Ufa Vedomosti: https://ufaved.info/vedomosti/chetverg/samoe-luchshee-predpriyatie-/
 - ОДК-Кузнецов — HDPic: https://hdpic.club/photo/24761-produkcija-oao-kuznecov-37-foto.html
 
-## V13 — Battle game image sources
+## Изображения «Авиабитвы» — v23
 
-- Il-2 — https://il2sturmovik.ru/m/articles/il_2_mod1943/Top.png
-- Yak-9 — https://il2sturmovik.com/m/articles/yak_9_ser1/Bottom.png
-- I-16 — https://il2sturmovik.com/m/articles/i_16_type_24/Bottom.png
-- MiG-21 — Wikimedia Commons top-view silhouette
-- MiG-29 — PNGKey transparent PNG
-- Su-27 — Wikimedia Commons top-view silhouette
-- Su-57 — ClipartKey PNG
-- Yak-3 — kindpng PNG source; playable game view uses a more reliable top-down rendering.
+Игровые самолёты (Ил-2, Як-3, МиГ-15, МиГ-21, МиГ-29, Су-27, Су-34, Су-35 и Су-57) теперь отображаются собственными векторными силуэтами, нарисованными средствами Canvas. Внешние PNG/JPG, image-proxy и удаление фона для игровых иконок больше не используются.
 
-## Фотографии самолётов для мини-игры «Авиабитва»
+## Дополнения v23
 
-Ил-2 — il2sturmovik.ru; Як-3 — massimotessitori.altervista.org; МиГ-15 — wiki.warthunder.com; МиГ-21 — ModDB; МиГ-29 — War History; Су-27 — best-wallpaper.net; Су-34 — DVIDS; Су-35 — voennoe-obozrenie.ru; Су-57 — gordonua.com.
+- КнАГУ — фотография лаборатории аэродинамики и аэромеханики летательных аппаратов: https://pl-llc.ru/portfolio/laboratoriya-aerodinamika-i-aeromekhanika-letatelnykh-apparatov-v-knagu/
+- SJ-100 / производственный центр «Яковлев» — фотография самолёта у ангара, публикация News.ru: https://news.ru/russia/dvigatel-dlya-importozameshennogo-sj-100-proshel-vse-ispytaniya
 
-## Спрайты Авиабитвы — версия v18
+Для изображений, лицензия которых не указана прямо на странице источника, условия повторного использования следует проверить перед дальнейшим распространением.
 
-- Ил-2: https://il2sturmovik.ru/m/articles/il_2_mod1943/Top.png
-- Як-3: https://massimotessitori.altervista.org/sovietwarplanes/pages/yak3/misos/zakharov/Pict03.jpg
-- МиГ-15: https://i.ebayimg.com/images/g/GbMAAOSwJkBllQvB/s-l1200.jpg
-- МиГ-21: https://p.turbosquid.com/ts-thumb/R4/wt0jcV/Lj/vray90/png/1745562745/1920x1080/fit_q87/aab76477e848f57c4204d2391f039633e67d92e8/vray90.jpg
-- МиГ-29: https://warhistory.org/media/2024/01/1706443612_179_Mikoyan-MiG-29-%E2%80%98Fulcrum-1977.jpg
-- Су-27: https://cdnn1.lt.sputniknews.com/img/747/87/7478796_9%3A406%3A962%3A1005_1920x0_80_0_0_da7a6bfe8c46bc3d87c65d381a094636.png
-- Су-34: https://d1ldvf68ux039x.cloudfront.net/thumbs/photos/2506/9081728/2000w_q95.jpg
-- Су-35: https://cdn.shopify.com/s/files/1/0291/4536/6588/files/61ef742a16ae4082895c51c939d52789.jpg?v=1733846434
-- Су-57: https://cdn.renderhub.com/3dxin/sukhoi-su-57-stealth-jet-fighter-pixel-camouflage/sukhoi-su-57-stealth-jet-fighter-pixel-camouflage-12.jpg
 
-Примечание: белый фон найденных изображений визуально убирается в игре через режим наложения multiply; это позволяет не зависеть от CORS-доступа к пикселям внешних изображений.
+## Air Battle PNG sprite pack
 
-Игровые изображения в «Авиабитве» могут проходить через внешний HTTPS-прокси изображений для удаления белого фона в браузере; этот технический механизм не отображается пользователю.
+- site/assets/air-battle/ contains the transparent aircraft, enemy, projectile, explosion, and power-up PNGs supplied by the project owner in the site.zip archive.
+- The supplied archive did not include individual creator or license metadata. The repository records the pack as user-supplied and does not claim third-party authorship or a specific open license.
 
-## Дополнительные игровые изображения v22
 
-В «Авиабитве» исправлены источники верхних изображений и ориентация: Су-27 — top-view модель с белым фоном; МиГ-15 — top-view модель; Су-35 — top-view модель; Су-57 — top-view модель. Эти ссылки используются только игровым кодом; сведения не выводятся в пользовательский интерфейс.
+## Возвращённые игровые иконки v25
+
+- site/assets/air-battle/aircraft/mig-15.png и mig-21.png предоставлены владельцем проекта. В загруженных файлах нет отдельных сведений об авторстве или лицензии; репозиторий не приписывает изображения сторонним авторам и не заявляет открытую лицензию.
