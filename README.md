@@ -27,3 +27,8 @@ https://adoloto16-spec.github.io/aeroletopis/
 ## Источники изображений
 
 См. [IMAGE_LICENSES.md](./IMAGE_LICENSES.md).
+
+
+### Air Battle assets (v24)
+
+The battle scene loads its nine aircraft and the tank, drone, projectile, explosion, and three power-up sprites from site/assets/air-battle/. The compressed page bundle carries the image bytes as data URLs, while the original PNG files remain in the repository.

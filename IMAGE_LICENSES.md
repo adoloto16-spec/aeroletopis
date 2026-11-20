@@ -39,3 +39,9 @@
 - SJ-100 / производственный центр «Яковлев» — фотография самолёта у ангара, публикация News.ru: https://news.ru/russia/dvigatel-dlya-importozameshennogo-sj-100-proshel-vse-ispytaniya
 
 Для изображений, лицензия которых не указана прямо на странице источника, условия повторного использования следует проверить перед дальнейшим распространением.
+
+
+## Air Battle PNG sprite pack
+
+- site/assets/air-battle/ contains the transparent aircraft, enemy, projectile, explosion, and power-up PNGs supplied by the project owner in the site.zip archive.
+- The supplied archive did not include individual creator or license metadata. The repository records the pack as user-supplied and does not claim third-party authorship or a specific open license.
