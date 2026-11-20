@@ -61,3 +61,8 @@
 
 - `site/assets/museum/novosibirsk-plant.jpg` — сборочный цех НАЗ им. Чкалова, 6 марта 2013 года. Пресс-служба Президента России / Kremlin.ru. Файл сохранён без изменений. [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Chkalov_Novosibirsk_Aviation_Plant.jpeg) · [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 - `site/assets/museum/leningrad-1941.jpg` — ленинградцы слушают сообщение о нападении Германии на СССР, 22 июня 1941 года. Фото Бориса Лосина, помечено на Wikimedia Commons как общественное достояние в России. Файл сохранён без изменений. [Военный альбом](https://waralbum.ru/341349/)
+
+
+## Фон «Авиабитвы»
+
+Две текстуры `site/assets/air-battle/backgrounds/meadow-01.webp` и `meadow-02.webp` созданы встроенным ImageGen. Первый промпт задаёт фотореалистичный луг с редкими кустами, строго вертикальный вид сверху и мягкое рассеянное освещение. Второй использует первую текстуру как референс и меняет расположение кустов, сохраняя масштаб, свет и палитру.

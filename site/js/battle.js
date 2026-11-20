@@ -16,6 +16,8 @@ const BATTLE_STARTER = "il-2";
 const BATTLE_FLEET = AIRCRAFT.filter(({id}) => Object.hasOwn(BATTLE_PROFILES, id))
   .sort((a,b)=>Number(b.id===BATTLE_STARTER)-Number(a.id===BATTLE_STARTER));
 const BATTLE_SPRITE_ROOT = "site/assets/air-battle/";
+const BATTLE_GROUND = ["backgrounds/meadow-01.webp","backgrounds/meadow-02.webp"];
+const BATTLE_SCROLL_PX_PER_MS = .08;
 const BATTLE_EFFECTS = {
   bullet:"effects/bullet.png", drone:"effects/drone.png",
   explosion:"effects/explosion.png", tank:"effects/tank.png"
@@ -33,7 +35,7 @@ const battle = {
   playerX:0, velocity:0, bank:0, hitUntil:0,
   time:0, last:0, raf:0, nextShot:0, nextTank:0, nextDrone:0, nextPowerup:0,
   bullets:[], tanks:[], drones:[], powerups:[], explosions:[], buffs:{},
-  images:new Map()
+  images:new Map(), groundStrip:null
 };
 
 function battleAircraftPath(id) {
@@ -363,21 +365,60 @@ function battleMarker(x,y,r,color) {
   ctx.arc(x,y,r,0,Math.PI*2);
   ctx.fill();
 }
+function battleCreateGroundStrip() {
+  const tiles=BATTLE_GROUND.map(battleImage);
+  if(tiles.some(image=>!image.complete || !image.naturalWidth)) return null;
+
+  const {naturalWidth:width,naturalHeight:height}=tiles[0];
+  const overlap=Math.round(height*.16), stride=height-overlap;
+  const strip=document.createElement("canvas");
+  strip.width=width;
+  strip.height=stride*tiles.length;
+  const ctx=strip.getContext("2d");
+
+  const seam=document.createElement("canvas");
+  seam.width=width;
+  seam.height=overlap;
+  const mask=seam.getContext("2d");
+  const fade=mask.createLinearGradient(0,0,0,overlap);
+  fade.addColorStop(0,"#000");
+  fade.addColorStop(1,"transparent");
+
+  // Continue the previous tile over the start of this one, including across the loop boundary.
+  tiles.forEach((tile,index)=>{
+    const y=index*stride, previous=tiles[(index+tiles.length-1)%tiles.length];
+    ctx.drawImage(tile,0,0,width,stride,0,y,width,stride);
+    mask.globalCompositeOperation="copy";
+    mask.drawImage(previous,0,stride,width,overlap,0,0,width,overlap);
+    mask.globalCompositeOperation="destination-in";
+    mask.fillStyle=fade;
+    mask.fillRect(0,0,width,overlap);
+    ctx.drawImage(seam,0,y);
+  });
+  return strip;
+}
+function battleDrawGround(ctx,w,h,time) {
+  const ground=battle.groundStrip??=battleCreateGroundStrip();
+  if(!ground) {
+    ctx.fillStyle="#1b251d";
+    ctx.fillRect(0,0,w,h);
+    return;
+  }
+
+  const dpr=battle.dpr;
+  const height=Math.ceil(Math.max(h,w*ground.height/ground.width)*dpr)/dpr;
+  const width=height*ground.width/ground.height;
+  const x=(w-width)/2;
+  const offset=(Math.round(time*BATTLE_SCROLL_PX_PER_MS*dpr)/dpr)%height;
+  ctx.drawImage(ground,x,offset-height,width,height);
+  ctx.drawImage(ground,x,offset,width,height);
+  ctx.fillStyle="rgba(11,23,13,.18)";
+  ctx.fillRect(0,0,w,h);
+}
 function battleDraw() {
   const {ctx,width:w,height:h,time}=battle;
   if(!ctx || !w || !h) return;
-  ctx.fillStyle="#1b251d";
-  ctx.fillRect(0,0,w,h);
-  const gradient=ctx.createLinearGradient(0,0,0,h);
-  gradient.addColorStop(0,"rgba(106,126,91,.23)");
-  gradient.addColorStop(1,"rgba(0,0,0,.19)");
-  ctx.fillStyle=gradient;
-  ctx.fillRect(0,0,w,h);
-  ctx.strokeStyle="rgba(210,216,187,.06)";
-  ctx.beginPath();
-  for(let x=0;x<w;x+=38) {ctx.moveTo(x,0);ctx.lineTo(x,h);}
-  for(let y=0;y<h;y+=38) {ctx.moveTo(0,y);ctx.lineTo(w,y);}
-  ctx.stroke();
+  battleDrawGround(ctx,w,h,time);
   for(const t of battle.tanks) {
     const size=t.size*1.3;
     if(!battleDrawSprite(BATTLE_EFFECTS.tank,t.x,t.y,size,size)) battleMarker(t.x,t.y,t.size*.42,"#82917d");
@@ -432,6 +473,7 @@ function battleEnter() {
     const paths=[
       ...BATTLE_FLEET.map(a=>battleAircraftPath(a.id)),
       ...Object.values(BATTLE_EFFECTS),
+      ...BATTLE_GROUND,
       ...Object.values(BATTLE_POWERUPS).map(p=>"powerups/"+p.file)
     ];
     paths.forEach(battleImage);
