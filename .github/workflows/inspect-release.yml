@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Decode and inspect implementation
+      - name: Decode targeted snippets
         shell: bash
         run: |
           python3 - <<'PY'
@@ -31,39 +31,27 @@ jobs:
           raw = "".join(Path("site", name + ".b64").read_text(encoding="utf-8").strip() for name in order)
           html = gzip.decompress(base64.b64decode(raw, validate=True)).decode("utf-8")
 
-          def dump(label, start, end=None, limit=9000):
+          def show(label, start, end, cap=5000):
               print("\\n===== " + label + " =====")
               if start < 0:
                   print("NOT FOUND")
                   return
-              end = len(html) if end is None or end < 0 else end
-              value = html[start:end]
-              print(value[:limit])
-              if len(value) > limit:
-                  print("...TRUNCATED", len(value)-limit, "CHARS")
+              s = html[start:end]
+              print(s[:cap])
+              if len(s) > cap: print("...TRUNCATED", len(s)-cap)
 
-          c = html.find('id="centersModule"')
-          b = html.find('id="battleModule"')
-          dump("CENTERS SECTION", c, b, 9000)
+          for term in ["ангар", "hangar", "AIRCRAFT=", "SOURCES=", "const SOURCES", "function renderAircraft", "function battleRenderSelection", "function battleDraw(", "function battleDrawPlane", "function battleDrawBullet", "function battleDrawTank", "function battleMove(", "function battleDestroyTank", "function battleUpdateHud"]:
+              hits = [m.start() for m in re.finditer(re.escape(term),html,re.I)]
+              print("\\nTERM",term,"HITS",hits[:10])
+              for i in hits[:3]: show(term+" @"+str(i),max(0,i-150),min(len(html),i+min(cap if (cap:=5200) else 5200,5200)),5200)
 
-          for term, limit in [
-              ("const AIRCRAFT", 7000),
-              ("const BATTLE_STATS", 5000),
-              ("const BATTLE_SPRITES", 5000),
-              ("const battle=", 2500),
-              ("function battleLoad", 6000),
-              ("function battleCreateBullet", 4000),
-              ("function battleDraw", 8000),
-              ("function battleUpdate", 8000),
-              ("function battleStart", 4000),
-              ("function battleLoop", 5000),
-          ]:
-              i = html.find(term)
-              dump(term, i, i+limit if i >= 0 else -1, limit)
-
-          print("\\n===== RELEVANT DECLARATIONS =====")
-          for m in re.finditer(r'(?:const|let|var|function)\\s+([A-Za-z_$][\\w$]*)', html):
-              name = m.group(1)
-              if any(k in name.lower() for k in ("aircraft","hangar","battle","sprite","center")):
-                  print(m.start(), name)
+          a=html.find("const AIRCRAFT=[")
+          z=html.find("const PEOPLE=",a)
+          if z<0: z=html.find("const EVENTS=",a)
+          show("AIRCRAFT ARRAY",a,z,18000)
+          b=html.find("function battleRenderSelection")
+          show("BATTLE RENDER SELECTION",b,html.find("function battleCanvasSize",b),6000)
+          d=html.find("function battleDraw(ctx")
+          if d<0: d=html.find("function battleDraw()")
+          show("BATTLE DRAW",d,html.find("function battleUpdateHud",d),7500)
           PY
