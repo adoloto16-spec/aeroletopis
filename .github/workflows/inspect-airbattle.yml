@@ -29,5 +29,7 @@ jobs:
           if m:
               rows = re.findall(r'id:"([^"]+)",name:"([^"]+)"', m.group(1))
               print("\nAIRCRAFT_IDS", rows)
+          for ident in ["il-2","yak-3","mig-15","mig-21","mig-29","mig-31","su-25","su-27","su-34","su-35","su-57"]:
+              print("ID_CHECK", ident, html.count('id:"'+ident+'"'), html.count('"'+ident+'"'))
           print("\nHTML_LENGTH",len(html))
           PY
