@@ -78,7 +78,7 @@ jobs:
               pos += size
 
           needs_commit = malformed_suffix or normalized_html != html or any(
-              clean != original for clean, original in zip(desired, original_chunks)
+              clean != original.strip() for clean, original in zip(desired, original_chunks)
           )
 
           if needs_commit:
