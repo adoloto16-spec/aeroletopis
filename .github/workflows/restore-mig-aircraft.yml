@@ -1,0 +1,203 @@
+name: Restore MiG-15 and MiG-21 to Air Battle
+on:
+  push:
+    branches:
+      - feature/knastu-sj100-airbattle
+permissions:
+  contents: write
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v6
+      - name: Restore MiG sprites and playable profiles
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, gzip, re, struct, subprocess, tempfile
+
+          order = [
+              "kr-01a", "kr-01b", "kr-02", "kr-03",
+              "kr-04q1", "kr-04q2", "kr-04q3", "kr-04q4", "kr-04b",
+              "kr-05a", "kr-05b", "kr-06a", "kr-06b",
+              "kr-07q1", "kr-07q2", "kr-07q3", "kr-07q4", "kr-07b",
+              "kr-08q1", "kr-08q2", "kr-08q3", "kr-08q4", "kr-08b"
+          ]
+          paths = [Path("site", name + ".b64") for name in order]
+          chunks = [path.read_text(encoding="utf-8").strip() for path in paths]
+          html = gzip.decompress(base64.b64decode("".join(chunks), validate=True)).decode("utf-8")
+
+          supplied = {
+              "mig-15": Path("mig-15.png"),
+              "mig-21": Path("mig-21.png"),
+          }
+          for ident, path in supplied.items():
+              if not path.is_file():
+                  raise SystemExit(f"Missing user-supplied icon: {path}")
+              data = path.read_bytes()
+              if not data.startswith(b"\x89PNG\r\n\x1a\n") or len(data) < 1024:
+                  raise SystemExit(f"Invalid PNG: {path}")
+              width, height = struct.unpack(">II", data[16:24])
+              if (width, height) != (512, 512):
+                  raise SystemExit(f"Unexpected dimensions for {path}: {width}x{height}")
+              print(f"Validated {path}: {width}x{height}, {len(data):,} bytes")
+
+          sprite_anchor = '  "yak-3":{file:"aircraft/yak-3.png"},\n'
+          sprite_addition = (
+              sprite_anchor
+              + '  "mig-15":{file:"aircraft/mig-15.png"},\n'
+              + '  "mig-21":{file:"aircraft/mig-21.png"},\n'
+          )
+          for ident in supplied:
+              existing = html.count(f'"{ident}":{{file:')
+              if existing not in (0, 1):
+                  raise SystemExit(f"Duplicate sprite registry entry: {ident}")
+          if all(html.count(f'"{ident}":{{file:') == 0 for ident in supplied):
+              if html.count(sprite_anchor) != 1:
+                  raise SystemExit("Could not locate unique BATTLE_SPRITES insertion point")
+              html = html.replace(sprite_anchor, sprite_addition, 1)
+          elif not all(html.count(f'"{ident}":{{file:') == 1 for ident in supplied):
+              raise SystemExit("MiG sprite registry is only partially populated")
+
+          stats_anchor = '  "yak-3":{title:"Як-3",era:"1943–1945",size:63,fire:400,damage:2.7,bullet:700,move:315,grade:"ЛЁГКИЙ ИСТРЕБИТЕЛЬ"},\n'
+          stats_addition = (
+              stats_anchor
+              + '  "mig-15":{title:"МиГ-15",era:"1947",size:66,fire:360,damage:3.5,bullet:720,move:335,grade:"РЕАКТИВНЫЙ ИСТРЕБИТЕЛЬ-ПЕРЕХВАТЧИК"},\n'
+              + '  "mig-21":{title:"МиГ-21",era:"1956",size:72,fire:300,damage:4.3,bullet:760,move:355,grade:"СВЕРХЗВУКОВОЙ ИСТРЕБИТЕЛЬ"},\n'
+          )
+          for ident in supplied:
+              existing = html.count(f'"{ident}":{{title:')
+              if existing not in (0, 1):
+                  raise SystemExit(f"Duplicate stats registry entry: {ident}")
+          if all(html.count(f'"{ident}":{{title:') == 0 for ident in supplied):
+              if html.count(stats_anchor) != 1:
+                  raise SystemExit("Could not locate unique BATTLE_STATS insertion point")
+              html = html.replace(stats_anchor, stats_addition, 1)
+          elif not all(html.count(f'"{ident}":{{title:') == 1 for ident in supplied):
+              raise SystemExit("MiG stats registry is only partially populated")
+
+          asset_marker = "const BATTLE_ASSET_DATA={"
+          if html.count(asset_marker) != 1:
+              raise SystemExit("Expected exactly one BATTLE_ASSET_DATA registry")
+          existing_asset_keys = [
+              f'"aircraft/{ident}.png":"data:image/png;base64,'
+              for ident in supplied
+          ]
+          for ident, key in zip(supplied, existing_asset_keys):
+              if html.count(key) not in (0, 1):
+                  raise SystemExit(f"Duplicate embedded image: {ident}")
+          if not all(key in html for key in existing_asset_keys):
+              if any(key in html for key in existing_asset_keys):
+                  raise SystemExit("Only one of the two embedded MiG PNGs exists")
+              encoded = []
+              for ident, path in supplied.items():
+                  data_url = "data:image/png;base64," + base64.b64encode(path.read_bytes()).decode("ascii")
+                  encoded.append(f'"aircraft/{ident}.png":"{data_url}"')
+              html = html.replace(asset_marker, asset_marker + ",".join(encoded) + ",", 1)
+
+          for ident in supplied:
+              if html.count(f'id:"{ident}"') != 1:
+                  raise SystemExit(f"Expected one existing catalogue entry for {ident}")
+              if html.count(f'"{ident}":{{file:') != 1:
+                  raise SystemExit(f"Sprite entry missing or duplicated for {ident}")
+              if html.count(f'"{ident}":{{title:') != 1:
+                  raise SystemExit(f"Stats entry missing or duplicated for {ident}")
+              if f'"aircraft/{ident}.png":"data:image/png;base64,' not in html:
+                  raise SystemExit(f"Embedded PNG missing for {ident}")
+
+          # Preserve originals alongside the existing sprite pack for GitHub Pages.
+          asset_dir = Path("site/assets/air-battle/aircraft")
+          asset_dir.mkdir(parents=True, exist_ok=True)
+          for ident, path in supplied.items():
+              target = asset_dir / path.name
+              target.write_bytes(path.read_bytes())
+              path.unlink()
+
+          # Repack the existing 23-part bundle. Equal-sized chunks keep future
+          # branding normalization within a predictable final-chunk allowance.
+          compressed = base64.b64encode(
+              gzip.compress(html.encode("utf-8"), compresslevel=9, mtime=1790489284)
+          ).decode("ascii")
+          part_size = (len(compressed) + len(paths) - 1) // len(paths)
+          position = 0
+          for path in paths:
+              path.write_text(compressed[position:position + part_size] + "\n", encoding="utf-8")
+              position += part_size
+          if position - part_size >= len(compressed):
+              raise SystemExit("Invalid split of compressed release archive")
+
+          # Bump the release indicator and document the user-provided icons.
+          index = Path("index.html")
+          index_text = index.read_text(encoding="utf-8")
+          if "ЗАГРУЗКА РЕЛИЗА V24" in index_text:
+              index_text = index_text.replace("ЗАГРУЗКА РЕЛИЗА V24", "ЗАГРУЗКА РЕЛИЗА V25")
+          index.write_text(index_text, encoding="utf-8")
+
+          readme = Path("README.md")
+          if readme.exists():
+              text = readme.read_text(encoding="utf-8")
+              text = text.replace("**v23**", "**v25**").replace("## Версия v23", "## Версия v25")
+              text = text.replace("девяти боевых самолётов", "одиннадцати боевых самолётов")
+              text += (
+                  "\n\n## Возвращение МиГ-15 и МиГ-21 — v25\n\n"
+                  "- МиГ-15 и МиГ-21 снова доступны в «Авиабитве» с отдельными игровыми характеристиками.\n"
+                  "- Для игровых моделей используются предоставленные владельцем проекта PNG-иконки.\n"
+              )
+              readme.write_text(text, encoding="utf-8")
+
+          licenses = Path("IMAGE_LICENSES.md")
+          if licenses.exists():
+              text = licenses.read_text(encoding="utf-8")
+              text += (
+                  "\n\n## Возвращённые игровые иконки v25\n\n"
+                  "- site/assets/air-battle/aircraft/mig-15.png и mig-21.png предоставлены "
+                  "владельцем проекта. В загруженных файлах нет отдельных сведений об авторстве "
+                  "или лицензии; репозиторий не приписывает изображения сторонним авторам "
+                  "и не заявляет открытую лицензию.\n"
+              )
+              licenses.write_text(text, encoding="utf-8")
+
+          # Validate gzip/base64 round trip and syntax of all inline scripts.
+          rebuilt = gzip.decompress(
+              base64.b64decode("".join(path.read_text(encoding="utf-8").strip() for path in paths), validate=True)
+          ).decode("utf-8")
+          if rebuilt != html:
+              raise SystemExit("Compressed release round-trip mismatch")
+          scripts = re.findall(r"<script\b[^>]*>(.*?)</script\s*>", html, flags=re.I | re.S)
+          checked = 0
+          for script in scripts:
+              if not script.strip():
+                  continue
+              with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8", delete=False) as handle:
+                  handle.write(script)
+                  temp_path = Path(handle.name)
+              subprocess.run(["node", "--check", str(temp_path)], check=True)
+              temp_path.unlink(missing_ok=True)
+              checked += 1
+          if checked == 0:
+              raise SystemExit("No inline JavaScript was checked")
+
+          sprite_block_start = html.index("const BATTLE_SPRITES={")
+          sprite_block_end = html.index("};", sprite_block_start) + 2
+          sprite_ids = re.findall(r'"([^"]+)":\{file:', html[sprite_block_start:sprite_block_end])
+          stats_block_start = html.index("const BATTLE_STATS={")
+          stats_block_end = html.index("};", stats_block_start) + 2
+          stats_ids = re.findall(r'"([^"]+)":\{title:', html[stats_block_start:stats_block_end])
+          if len(sprite_ids) != 11 or set(sprite_ids) != set(stats_ids):
+              raise SystemExit(f"Unexpected battle registry: sprites={sprite_ids}, stats={stats_ids}")
+          print("Battle aircraft restored:", ", ".join(sprite_ids))
+          print(f"Release archive: {len(html):,} characters, {len(paths)} chunks, {checked} scripts syntax-checked")
+          PY
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "MiG-15 and MiG-21 are already restored."
+          else
+            git commit -m "feat: restore MiG-15 and MiG-21 in Air Battle"
+            git push
+          fi
