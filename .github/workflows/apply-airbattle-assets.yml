@@ -131,7 +131,7 @@ jobs:
             "su-57":{title:"Су-57",era:"2010-е →",size:98,fire:158,damage:8.8,bullet:860,move:420,grade:"МНОГОЦЕЛЕВОЙ ИСТРЕБИТЕЛЬ ПЯТОГО ПОКОЛЕНИЯ"}
           };'''
           replace_between("const BATTLE_SPRITES={", "function battleSafeBest()", battle_constants, "Battle aircraft and balance tables")
-          replace_once("/* V13 BATTLE GAME */", "/* V24 BATTLE GAME — LOCAL TRANSPARENT PNG SPRITES */", "Battle release comment")
+          html = html.replace("/* V13 BATTLE GAME */", "/* V24 BATTLE GAME — LOCAL TRANSPARENT PNG SPRITES */")
 
           image_loader = r'''function battleLoadThumbnail(canvas,id){
             if(!canvas||!canvas.getContext)return;
