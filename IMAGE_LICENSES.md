@@ -45,3 +45,8 @@
 
 - site/assets/air-battle/ contains the transparent aircraft, enemy, projectile, explosion, and power-up PNGs supplied by the project owner in the site.zip archive.
 - The supplied archive did not include individual creator or license metadata. The repository records the pack as user-supplied and does not claim third-party authorship or a specific open license.
+
+
+## Возвращённые игровые иконки v25
+
+- site/assets/air-battle/aircraft/mig-15.png и mig-21.png предоставлены владельцем проекта. В загруженных файлах нет отдельных сведений об авторстве или лицензии; репозиторий не приписывает изображения сторонним авторам и не заявляет открытую лицензию.

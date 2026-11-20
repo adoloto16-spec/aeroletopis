@@ -1,6 +1,6 @@
 # Аэролетопись — интерактивный музей российской авиации
 
-В репозитории опубликована веб-версия релизного архива **v23**.
+В репозитории опубликована веб-версия релизного архива **v25**.
 
 Сайт статический и не требует backend-сервера. Фотографии и часть материалов загружаются по HTTPS с внешних источников, как в исходном архиве.
 
@@ -14,7 +14,7 @@ https://adoloto16-spec.github.io/aeroletopis/
 
 Если GitHub Pages ещё не активирован для репозитория, в **Settings → Pages → Build and deployment → Source** нужно один раз выбрать **GitHub Actions**.
 
-## Версия v23
+## Версия v25
 
 - 18 самолётов с фото; SVG не используется как основной визуал карточек.
 - 15 важных людей авиации с реальными портретами.
@@ -32,3 +32,9 @@ https://adoloto16-spec.github.io/aeroletopis/
 ### Air Battle assets (v24)
 
 The battle scene loads its nine aircraft and the tank, drone, projectile, explosion, and three power-up sprites from site/assets/air-battle/. The compressed page bundle carries the image bytes as data URLs, while the original PNG files remain in the repository.
+
+
+## Возвращение МиГ-15 и МиГ-21 — v25
+
+- МиГ-15 и МиГ-21 снова доступны в «Авиабитве» с отдельными игровыми характеристиками.
+- Для игровых моделей используются предоставленные владельцем проекта PNG-иконки.
