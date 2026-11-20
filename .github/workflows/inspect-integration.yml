@@ -1,0 +1,31 @@
+name: Inspect Air Battle integration points
+on:
+  push:
+    branches: [feature/knastu-sj100-airbattle]
+    paths: [.github/workflows/inspect-integration.yml]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract and inspect source segments
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64,gzip,re
+          order=["kr-01a","kr-01b","kr-02","kr-03","kr-04q1","kr-04q2","kr-04q3","kr-04q4","kr-04b","kr-05a","kr-05b","kr-06a","kr-06b","kr-07q1","kr-07q2","kr-07q3","kr-07q4","kr-07b","kr-08q1","kr-08q2","kr-08q3","kr-08q4","kr-08b"]
+          html=gzip.decompress(base64.b64decode("".join(Path("site",n+".b64").read_text().strip() for n in order))).decode()
+          keys=["const AIRCRAFT=[","const BATTLE_SPRITES=","const BATTLE_STATS=","const battle=","let battle=","function battleStudiedAircraft","function battleDrawPlaneGlyph","function battleDrawPlane(ctx)","function battleDrawTank","function battleDrawPowerup","function battleDrawDrone","function battleCreateBullet","function battleDraw(){","function battleMove(dt)","function battleStart()"]
+          for key in keys:
+              pos=html.find(key)
+              print("\\n===== "+key+" =====")
+              print("NOT FOUND" if pos<0 else html[max(0,pos-250):pos+4400].replace("\\n"," ")[:4650])
+          m=re.search(r"const AIRCRAFT=\\[(.*?)\\];",html,re.S)
+          if m:
+              ids=re.findall(r'id:"([^"]+)",name:"([^"]+)"',m.group(1))
+              print("\\nCATALOG IDs",ids)
+          print("\\nHTML_LENGTH",len(html))
+          PY
