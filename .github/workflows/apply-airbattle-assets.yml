@@ -264,7 +264,7 @@ jobs:
             const size=e.size*(.62+progress*.72);
             battleDrawSprite(ctx,image,e.x,e.y,size,size,e.rotation,1-progress);
           }'''
-          replace_between("function battleDrawTank(ctx,t){", "function battleDraw(ctx){", sprite_renderers, "PNG sprite rendering functions")
+          replace_between("function battleDrawTank(ctx,t){", "function battleDraw(){", sprite_renderers, "PNG sprite rendering functions")
 
           new_draw = r'''function battleDraw(){
             const c=battle.canvas,ctx=battle.ctx;
