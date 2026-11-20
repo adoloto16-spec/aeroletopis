@@ -1,5 +1,4 @@
 name: Deploy to GitHub Pages
-# Aeroletopis branding normalization
 
 on:
   push:
@@ -8,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -26,127 +25,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Normalize release branding
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import base64, gzip, subprocess
-
-          order = [
-              "kr-01a","kr-01b","kr-02","kr-03",
-              "kr-04q1","kr-04q2","kr-04q3","kr-04q4","kr-04b",
-              "kr-05a","kr-05b","kr-06a","kr-06b",
-              "kr-07q1","kr-07q2","kr-07q3","kr-07q4","kr-07b",
-              "kr-08q1","kr-08q2","kr-08q3","kr-08q4","kr-08b"
-          ]
-          paths = [Path("site", name + ".b64") for name in order]
-          original_chunks = [p.read_text(encoding="utf-8") for p in paths]
-          chunks = []
-          malformed_suffix = False
-          for value in original_chunks:
-              if value.endswith("\\n"):
-                  value = value[:-2]
-                  malformed_suffix = True
-              value = value.strip()
-              chunks.append(value)
-
-          raw = "".join(chunks)
-          try:
-              html = gzip.decompress(base64.b64decode(raw, validate=True)).decode("utf-8")
-          except Exception as exc:
-              raise SystemExit(f"Release payload is invalid before normalization: {exc}")
-
-          normalized_html = (html
-              .replace("Крылья России", "Аэролетопись")
-              .replace("КРЫЛЬЯ РОССИИ", "АЭРОЛЕТОПИСЬ")
-              .replace("<h1>КРЫЛЬЯ<br/><em>РОССИИ</em></h1>", "<h1>АЭРОЛЕТОПИСЬ</h1>")
-              .replace('<span class="brand-mark">KR</span>', '<span class="brand-mark">А</span>'))
-          payload = base64.b64encode(
-              gzip.compress(normalized_html.encode("utf-8"), compresslevel=9, mtime=1790489284)
-          ).decode("ascii")
-
-          sizes = [len(chunk) for chunk in chunks[:-1]]
-          sizes.append(len(payload) - sum(sizes))
-          if sizes[-1] <= 0:
-              raise SystemExit("Release payload is too short for existing chunk layout")
-
-          pos = 0
-          desired = []
-          for size in sizes:
-              desired.append(payload[pos:pos + size])
-              pos += size
-
-          needs_commit = malformed_suffix or normalized_html != html or any(
-              clean != original.strip() for clean, original in zip(desired, original_chunks)
-          )
-
-          if needs_commit:
-              for path, chunk in zip(paths, desired):
-                  path.write_text(chunk + chr(10), encoding="utf-8")
-              subprocess.run(["git", "config", "user.name", "github-actions[bot]"], check=True)
-              subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], check=True)
-              subprocess.run(["git", "add", "site"], check=True)
-              subprocess.run(["git", "commit", "-m", "rename: normalize compressed release branding"], check=True)
-              subprocess.run(["git", "push"], check=True)
-              print("Compressed release chunks normalized")
-          else:
-              print("Release branding and chunk encoding already normalized")
-          PY
-
-      - name: Rebuild release from archive chunks
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import base64
-          import gzip
-
-          order = [
-              "kr-01a","kr-01b","kr-02","kr-03",
-              "kr-04q1","kr-04q2","kr-04q3","kr-04q4","kr-04b",
-              "kr-05a","kr-05b",
-              "kr-06a","kr-06b",
-              "kr-07q1","kr-07q2","kr-07q3","kr-07q4","kr-07b",
-              "kr-08q1","kr-08q2","kr-08q3","kr-08q4","kr-08b"
-          ]
-
-          chunks = []
-          for name in order:
-              value = Path("site", name + ".b64").read_text(encoding="utf-8").strip()
-              chunks.append(value)
-
-          raw = "".join(chunks)
-
-          try:
-              compressed = base64.b64decode(raw, validate=True)
-              html = gzip.decompress(compressed).decode("utf-8")
-          except Exception as exc:
-              raise SystemExit(f"Release payload is invalid: {exc}")
-
-          html = (html
-              .replace("Крылья России", "Аэролетопись")
-              .replace("КРЫЛЬЯ РОССИИ", "АЭРОЛЕТОПИСЬ")
-              .replace("<h1>КРЫЛЬЯ<br/><em>РОССИИ</em></h1>", "<h1>АЭРОЛЕТОПИСЬ</h1>")
-              .replace('<span class="brand-mark">KR</span>', '<span class="brand-mark">А</span>'))
-          if "Крылья России" in html or "КРЫЛЬЯ РОССИИ" in html:
-              raise SystemExit("Old site branding remains in release HTML")
-
-          out = Path("dist")
-          out.mkdir(exist_ok=True)
-          (out / "index.html").write_text(html, encoding="utf-8")
-          (out / ".nojekyll").write_text("", encoding="utf-8")
-          print(f"Release rebuilt successfully: {len(html):,} HTML characters")
-          PY
-
-      - name: Copy Air Battle assets
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p dist/assets
-          if [ -d site/assets ]; then
-            cp -a site/assets/. dist/assets/
-          fi
+      - name: Build static site
+        run: python3 build.py
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
