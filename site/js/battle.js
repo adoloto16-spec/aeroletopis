@@ -155,7 +155,7 @@ function battleHud() {
   const label=button.querySelector("span");
   if(label.textContent!==count) label.textContent=count;
   button.disabled=battle.mode!=="running" || !battleBombReady();
-  button.hidden=battle.mode!=="running";
+  button.parentElement.hidden=battle.mode!=="running";
 }
 function battleClearInput() {
   battle.keys.clear();
@@ -737,13 +737,18 @@ function battleInit() {
     battle.target={x:battleClampX(e.clientX-rect.left),y:battleClampY(e.clientY-rect.top)};
   };
   battle.field.addEventListener("pointerdown",e=>{
-    if(battle.mode!=="running" || !e.isPrimary || e.button!==0 || e.target.closest("button")) return;
+    if(battle.mode!=="running" || !e.isPrimary || e.button!==0 || e.target.closest(".battle-bomb-control,button")) return;
     battle.activePointer=e.pointerId;
     battle.field.setPointerCapture(e.pointerId);
     setTarget(e);
   });
   battle.field.addEventListener("pointermove",e=>{
-    if(battle.mode==="running" && (e.pointerType==="mouse" || e.pointerId===battle.activePointer)) setTarget(e);
+    if(battle.mode!=="running") return;
+    if(e.target.closest(".battle-bomb-control")) {
+      battle.target=null;
+      return;
+    }
+    if(e.pointerType==="mouse" || e.pointerId===battle.activePointer) setTarget(e);
   });
   battle.field.addEventListener("lostpointercapture",e=>{
     if(e.pointerId===battle.activePointer) battle.activePointer=null;
