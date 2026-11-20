@@ -33,7 +33,7 @@ def append_to_array(source, marker, item, label):
     if end < 0:
         fail(f"{label}: array terminator not found")
     current = source[start:end].rstrip()
-    if item.splitlines()[0].strip() in current:
+    if item.strip().splitlines()[0].strip() in current:
         fail(f"{label}: item appears to be already present")
     return source[:end] + ",\n" + item.strip() + "\n" + source[end:]
 
